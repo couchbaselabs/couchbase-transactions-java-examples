@@ -1,0 +1,35 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+version '1.0.0'
+
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.10.3'
+}
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url 'http://files.couchbase.com/maven2/' }
+}
+
+dependencies {
+    implementation 'ch.qos.logback:logback-classic:1.1.2'
+    compile group: 'com.couchbase.client', name: 'couchbase-transactions', version: '1.0.0-alpha.5-SNAPSHOT'
+    implementation 'net.sourceforge.argparse4j:argparse4j:0.8.1'
+}
+
+mainClassName = 'example.Main'
