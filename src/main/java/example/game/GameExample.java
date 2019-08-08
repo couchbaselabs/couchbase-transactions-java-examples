@@ -1,4 +1,4 @@
-package example;
+package example.game;
 
 import com.couchbase.client.core.cnc.Event;
 import com.couchbase.client.java.Bucket;
@@ -8,6 +8,7 @@ import com.couchbase.client.java.json.JsonObject;
 import com.couchbase.transactions.TransactionDurabilityLevel;
 import com.couchbase.transactions.Transactions;
 import com.couchbase.transactions.config.TransactionConfigBuilder;
+import com.couchbase.transactions.log.TransactionEvent;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -19,14 +20,17 @@ import org.slf4j.LoggerFactory;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class Main {
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+/**
+ * An example of Couchbase Distributed Transactions: please see the README for details.
+ */
+public class GameExample {
+    private static final Logger logger = LoggerFactory.getLogger(GameExample.class);
 
     public static void main(String[] args) {
         // Parse command line arguments
-        ArgumentParser parser = ArgumentParsers.newFor("ThroughputTest").build()
+        ArgumentParser parser = ArgumentParsers.newFor("Couchbase Distributed Transactions Game Example").build()
                 .defaultHelp(true)
-                .description("Provide throughput testing for Couchbase transactions library.");
+                .description("An example demonstrating the Couchbase Distributed Transactions, Java implementation.");
         parser.addArgument("-c", "--cluster")
                 .required(true)
                 .help("Specify Couchbase cluster address");
@@ -93,8 +97,24 @@ public class Main {
         // Initialize transactions.  Must only be one Transactions object per app as it creates background resources.
         Transactions transactions = Transactions.create(cluster, config);
 
+        // Optional but recommended - subscribe for events
+        cluster.environment().eventBus().subscribe(event -> {
+            if (event instanceof TransactionEvent) {
+
+                TransactionEvent te = (TransactionEvent) event;
+
+                if (te.severity().ordinal() >= Event.Severity.WARN.ordinal()) {
+                    // handle important event
+                }
+            }
+        });
+
+
+
         // The example.GameServer object emulates the central server for this game
         GameServer gameServer = new GameServer(transactions, collection);
+
+
 
         // Initialise some sample data - a player and a monster.  This is based on the Game Simulation sample bucket
         // provided with Couchbase, though that does not have to be installed.

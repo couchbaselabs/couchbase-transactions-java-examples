@@ -31,4 +31,12 @@ dependencies {
     implementation 'net.sourceforge.argparse4j:argparse4j:0.8.1'
 }
 
-mainClassName = 'example.Main'
+task game(type:JavaExec) {
+    main = 'example.game.GameExample'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+task transfer(type:JavaExec) {
+    main = 'example.transfer.TransferExample'
+    classpath = sourceSets.main.runtimeClasspath
+}

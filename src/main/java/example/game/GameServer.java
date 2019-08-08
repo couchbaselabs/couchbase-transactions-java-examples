@@ -1,4 +1,4 @@
-package example;
+package example.game;
 
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.json.JsonObject;
