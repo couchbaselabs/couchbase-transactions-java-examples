@@ -20,6 +20,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -36,7 +37,7 @@ public class TransferExample {
 
     public static void main(String[] args) {
         // Parse command line arguments
-        ArgumentParser parser = ArgumentParsers.newFor("Couchbase Distributed Transactions Game Example").build()
+        ArgumentParser parser = ArgumentParsers.newFor("Couchbase Distributed Transactions Transfer Example").build()
                 .defaultHelp(true)
                 .description("An example demonstrating the Couchbase Distributed Transactions, Java implementation.");
         parser.addArgument("-c", "--cluster")
@@ -68,46 +69,60 @@ public class TransferExample {
 
         try {
             Namespace ns = parser.parseArgs(args);
-            run(ns);
+
+            String clusterName = ns.getString("cluster");
+            String username = ns.getString("username");
+            String password = ns.getString("password");
+            String bucketName = ns.getString("bucket");
+            String durability = ns.getString("durability");
+            int amount = ns.getInt("amount");
+            boolean verbose = ns.getBoolean("verbose");
+
+            TransactionDurabilityLevel transactionDurabilityLevel = TransactionDurabilityLevel.MAJORITY;
+            switch (durability.toLowerCase()) {
+                case "none":
+                    transactionDurabilityLevel = TransactionDurabilityLevel.NONE;
+                    break;
+                case "majority":
+                    transactionDurabilityLevel = TransactionDurabilityLevel.MAJORITY;
+                    break;
+                case "persist_to_majority":
+                    transactionDurabilityLevel = TransactionDurabilityLevel.PERSIST_TO_MAJORITY;
+                    break;
+                case "majority_and_persist":
+                    transactionDurabilityLevel = TransactionDurabilityLevel.MAJORITY_AND_PERSIST_ON_MASTER;
+                    break;
+                default:
+                    System.out.println("Unknown durability setting " + durability);
+                    System.exit(-1);
+            }
+
+            run(clusterName, username, password, bucketName, transactionDurabilityLevel, verbose, amount);
         } catch (ArgumentParserException e) {
             parser.handleError(e);
         }
     }
 
-    private static void run(Namespace ns) {
-        String clusterName = ns.getString("cluster");
-        String username = ns.getString("username");
-        String password = ns.getString("password");
-        String bucketName = ns.getString("bucket");
-        String durability = ns.getString("durability");
-        int amount = ns.getInt("amount");
-
-        TransactionConfigBuilder config = TransactionConfigBuilder.create();
-        switch (durability.toLowerCase()) {
-            case "none":
-                config.durabilityLevel(TransactionDurabilityLevel.NONE);
-                break;
-            case "majority":
-                config.durabilityLevel(TransactionDurabilityLevel.MAJORITY);
-                break;
-            case "persist_to_majority":
-                config.durabilityLevel(TransactionDurabilityLevel.PERSIST_TO_MAJORITY);
-                break;
-            case "majority_and_persist":
-                config.durabilityLevel(TransactionDurabilityLevel.MAJORITY_AND_PERSIST_ON_MASTER);
-                break;
-            default:
-                System.out.println("Unknown durability setting " + durability);
-                System.exit(-1);
-        }
-        if (ns.getBoolean("verbose")) {
-            config.logDirectly(Event.Severity.VERBOSE);
-        }
+    private static void run(String clusterName,
+                            String username,
+                            String password,
+                            String bucketName,
+                            TransactionDurabilityLevel transactionDurabilityLevel,
+                            boolean verbose,
+                            int amount) {
 
         // Initialize the Couchbase cluster
         Cluster cluster = Cluster.connect(clusterName, username, password);
         Bucket bucket = cluster.bucket(bucketName);
         Collection collection = bucket.defaultCollection();
+
+        // Create Transactions config
+        TransactionConfigBuilder config = TransactionConfigBuilder.create()
+                .durabilityLevel(transactionDurabilityLevel);
+
+        if (verbose) {
+            config.logDirectly(Event.Severity.VERBOSE);
+        }
 
         // Initialize transactions.  Must only be one Transactions object per app as it creates background resources.
         Transactions transactions = Transactions.create(cluster, config);
@@ -171,12 +186,13 @@ public class TransferExample {
                 // getOrError means "fail the transaction if that key does not exist"
                 TransactionJsonDocument customer1 = ctx.getOrError(collection, customer1Id);
                 TransactionJsonDocument customer2 = ctx.getOrError(collection, customer2Id);
+                // Optional<TransactionJsonDocument> customer2Opt = ctx.get(collection, customer2Id);
 
                 JsonObject customer1Content = customer1.contentAsObject();
                 JsonObject customer2Content = customer2.contentAsObject();
 
                 logger.info("In transaction - got customer 1's details: " + customer1Content);
-                logger.info("In transaction - got customer 2's details: " + customer1Content);
+                logger.info("In transaction - got customer 2's details: " + customer2Content);
 
                 int customer1Balance = customer1Content.getInt("balance");
                 int customer2Balance = customer2Content.getInt("balance");
@@ -232,6 +248,8 @@ public class TransferExample {
             else {
                 // Unexpected error - log for human review
                 // This per-txn log allows the app to only log failures
+                System.err.println("Transaction " + err.result().transactionId() + " failed:");
+
                 err.result().log().logs().forEach(System.err::println);
             }
         }
