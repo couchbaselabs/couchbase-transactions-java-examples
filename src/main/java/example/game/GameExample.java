@@ -161,7 +161,7 @@ public class GameExample {
 
         // Shutdown resources cleanly
         transactions.close();
-        cluster.shutdown();
+        cluster.disconnect();
     }
 
 

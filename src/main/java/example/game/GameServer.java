@@ -2,7 +2,7 @@ package example.game;
 
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.json.JsonObject;
-import com.couchbase.transactions.TransactionJsonDocument;
+import com.couchbase.transactions.TransactionGetResult;
 import com.couchbase.transactions.Transactions;
 import com.couchbase.transactions.error.TransactionFailed;
 import com.couchbase.transactions.log.LogDefer;
@@ -25,8 +25,8 @@ public class GameServer {
                 logger.info("Starting transaction, player {} is hitting monster {} for {} points of damage",
                         playerId, monsterId, damage);
 
-                TransactionJsonDocument monster = ctx.getOrError(gameSim, monsterId);
-                TransactionJsonDocument player = ctx.getOrError(gameSim, playerId);
+                TransactionGetResult monster = ctx.get(gameSim, monsterId);
+                TransactionGetResult player = ctx.get(gameSim, playerId);
 
                 JsonObject monsterContent = monster.contentAsObject();
                 JsonObject playerContent = player.contentAsObject();

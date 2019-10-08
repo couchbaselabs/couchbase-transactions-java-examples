@@ -7,7 +7,7 @@ import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.json.JsonObject;
 import com.couchbase.transactions.TransactionDurabilityLevel;
-import com.couchbase.transactions.TransactionJsonDocument;
+import com.couchbase.transactions.TransactionGetResult;
 import com.couchbase.transactions.Transactions;
 import com.couchbase.transactions.config.TransactionConfigBuilder;
 import com.couchbase.transactions.error.TransactionFailed;
@@ -184,8 +184,8 @@ public class TransferExample {
             transactions.run(ctx -> {
 
                 // getOrError means "fail the transaction if that key does not exist"
-                TransactionJsonDocument customer1 = ctx.getOrError(collection, customer1Id);
-                TransactionJsonDocument customer2 = ctx.getOrError(collection, customer2Id);
+                TransactionGetResult customer1 = ctx.get(collection, customer1Id);
+                TransactionGetResult customer2 = ctx.get(collection, customer2Id);
                 // Optional<TransactionJsonDocument> customer2Opt = ctx.get(collection, customer2Id);
 
                 JsonObject customer1Content = customer1.contentAsObject();
