@@ -28,7 +28,7 @@ repositories {
 
 dependencies {
     implementation 'ch.qos.logback:logback-classic:1.1.2'
-    compile group: 'com.couchbase.client', name: 'couchbase-transactions', version: '1.0.0-beta.3-SNAPSHOT'
+    compile group: 'com.couchbase.client', name: 'couchbase-transactions', version: '1.0.0-beta.3'
     implementation 'net.sourceforge.argparse4j:argparse4j:0.8.1'
 }
 
