@@ -1,7 +1,7 @@
 package example.transfer;
 
 import com.couchbase.client.core.cnc.Event;
-import com.couchbase.client.core.error.KeyNotFoundException;
+import com.couchbase.client.core.error.DocumentNotFoundException;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Collection;
@@ -20,6 +20,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -90,7 +91,7 @@ public class TransferExample {
                     transactionDurabilityLevel = TransactionDurabilityLevel.PERSIST_TO_MAJORITY;
                     break;
                 case "majority_and_persist":
-                    transactionDurabilityLevel = TransactionDurabilityLevel.MAJORITY_AND_PERSIST_ON_MASTER;
+                    transactionDurabilityLevel = TransactionDurabilityLevel.MAJORITY_AND_PERSIST_TO_ACTIVE;
                     break;
                 default:
                     System.out.println("Unknown durability setting " + durability);
@@ -115,6 +116,7 @@ public class TransferExample {
         Cluster cluster = Cluster.connect(clusterName, username, password);
         Bucket bucket = cluster.bucket(bucketName);
         Collection collection = bucket.defaultCollection();
+        bucket.waitUntilReady(Duration.ofSeconds(30));
 
         // Create Transactions config
         TransactionConfigBuilder config = TransactionConfigBuilder.create()
@@ -241,8 +243,8 @@ public class TransferExample {
             if (err.getCause() instanceof InsufficientFunds) {
                 throw (RuntimeException) err.getCause(); // propagate up
             }
-            // ctx.getOrError can raise a KeyNotFoundException
-            else if (err.getCause() instanceof KeyNotFoundException) {
+            // ctx.getOrError can raise a DocumentNotFoundException
+            else if (err.getCause() instanceof DocumentNotFoundException) {
                 throw new CustomerNotFound();
             }
             else {
