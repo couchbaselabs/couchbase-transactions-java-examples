@@ -1,13 +1,13 @@
 package example.transfer;
 
 import com.couchbase.client.core.cnc.Event;
-import com.couchbase.client.core.error.KeyNotFoundException;
+import com.couchbase.client.core.error.DocumentNotFoundException;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.json.JsonObject;
 import com.couchbase.transactions.TransactionDurabilityLevel;
-import com.couchbase.transactions.TransactionJsonDocument;
+import com.couchbase.transactions.TransactionGetResult;
 import com.couchbase.transactions.Transactions;
 import com.couchbase.transactions.config.TransactionConfigBuilder;
 import com.couchbase.transactions.error.TransactionFailed;
@@ -20,6 +20,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -90,7 +91,7 @@ public class TransferExample {
                     transactionDurabilityLevel = TransactionDurabilityLevel.PERSIST_TO_MAJORITY;
                     break;
                 case "majority_and_persist":
-                    transactionDurabilityLevel = TransactionDurabilityLevel.MAJORITY_AND_PERSIST_ON_MASTER;
+                    transactionDurabilityLevel = TransactionDurabilityLevel.MAJORITY_AND_PERSIST_TO_ACTIVE;
                     break;
                 default:
                     System.out.println("Unknown durability setting " + durability);
@@ -115,6 +116,7 @@ public class TransferExample {
         Cluster cluster = Cluster.connect(clusterName, username, password);
         Bucket bucket = cluster.bucket(bucketName);
         Collection collection = bucket.defaultCollection();
+        bucket.waitUntilReady(Duration.ofSeconds(30));
 
         // Create Transactions config
         TransactionConfigBuilder config = TransactionConfigBuilder.create()
@@ -184,8 +186,8 @@ public class TransferExample {
             transactions.run(ctx -> {
 
                 // getOrError means "fail the transaction if that key does not exist"
-                TransactionJsonDocument customer1 = ctx.getOrError(collection, customer1Id);
-                TransactionJsonDocument customer2 = ctx.getOrError(collection, customer2Id);
+                TransactionGetResult customer1 = ctx.get(collection, customer1Id);
+                TransactionGetResult customer2 = ctx.get(collection, customer2Id);
                 // Optional<TransactionJsonDocument> customer2Opt = ctx.get(collection, customer2Id);
 
                 JsonObject customer1Content = customer1.contentAsObject();
@@ -241,8 +243,8 @@ public class TransferExample {
             if (err.getCause() instanceof InsufficientFunds) {
                 throw (RuntimeException) err.getCause(); // propagate up
             }
-            // ctx.getOrError can raise a KeyNotFoundException
-            else if (err.getCause() instanceof KeyNotFoundException) {
+            // ctx.getOrError can raise a DocumentNotFoundException
+            else if (err.getCause() instanceof DocumentNotFoundException) {
                 throw new CustomerNotFound();
             }
             else {

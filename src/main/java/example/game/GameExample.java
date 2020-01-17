@@ -17,6 +17,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -79,7 +80,7 @@ public class GameExample {
                 config.durabilityLevel(TransactionDurabilityLevel.PERSIST_TO_MAJORITY);
                 break;
             case "majority_and_persist":
-                config.durabilityLevel(TransactionDurabilityLevel.MAJORITY_AND_PERSIST_ON_MASTER);
+                config.durabilityLevel(TransactionDurabilityLevel.MAJORITY_AND_PERSIST_TO_ACTIVE);
                 break;
             default:
                 System.out.println("Unknown durability setting " + durability);
@@ -93,6 +94,7 @@ public class GameExample {
         Cluster cluster = Cluster.connect(clusterName, username, password);
         Bucket bucket = cluster.bucket(bucketName);
         Collection collection = bucket.defaultCollection();
+        bucket.waitUntilReady(Duration.ofSeconds(30));
 
         // Initialize transactions.  Must only be one Transactions object per app as it creates background resources.
         Transactions transactions = Transactions.create(cluster, config);
@@ -161,7 +163,7 @@ public class GameExample {
 
         // Shutdown resources cleanly
         transactions.close();
-        cluster.shutdown();
+        cluster.disconnect();
     }
 
 
