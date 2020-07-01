@@ -3,7 +3,9 @@ package example.game;
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.json.JsonObject;
 import com.couchbase.transactions.TransactionGetResult;
+import com.couchbase.transactions.TransactionResult;
 import com.couchbase.transactions.Transactions;
+import com.couchbase.transactions.error.TransactionCommitAmbiguous;
 import com.couchbase.transactions.error.TransactionFailed;
 import com.couchbase.transactions.log.LogDefer;
 import org.slf4j.Logger;
@@ -67,7 +69,13 @@ public class GameServer {
 
                 logger.info("About to commit transaction");
             });
+        } catch (TransactionCommitAmbiguous e) {
+            logger.warn("Transaction possibly committed:");
+            for (LogDefer log: e.result().log().logs()) {
+                logger.warn(log.toString());
+            }
         } catch (TransactionFailed e) {
+
             // The operation timed out (the default timeout is 15 seconds) despite multiple attempts to commit the
             // transaction logic.   Both the monster and the player will be untouched.
 
@@ -75,7 +83,7 @@ public class GameServer {
             // failure, as the downside is limited to the player experiencing a temporary glitch in a fast-moving MMO.
 
             // So, we will just log the error
-            logger.warn("Failed to complete action " + actionUuid);
+            logger.warn("Transaction did not reach commit:");
             for (LogDefer log: e.result().log().logs()) {
                 logger.warn(log.toString());
             }

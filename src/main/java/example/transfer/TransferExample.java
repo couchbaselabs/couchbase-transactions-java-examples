@@ -10,6 +10,7 @@ import com.couchbase.transactions.TransactionDurabilityLevel;
 import com.couchbase.transactions.TransactionGetResult;
 import com.couchbase.transactions.Transactions;
 import com.couchbase.transactions.config.TransactionConfigBuilder;
+import com.couchbase.transactions.error.TransactionCommitAmbiguous;
 import com.couchbase.transactions.error.TransactionFailed;
 import com.couchbase.transactions.log.TransactionEvent;
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -236,8 +237,9 @@ public class TransferExample {
                 logger.info("In transaction - about to commit");
                 // ctx.commit(); // can also, and optionally, explicitly commit
             });
-
-
+        } catch (TransactionCommitAmbiguous err) {
+            System.err.println("Transaction " + err.result().transactionId() + " possibly committed:");
+            err.result().log().logs().forEach(System.err::println);
         } catch (TransactionFailed err) {
 
             if (err.getCause() instanceof InsufficientFunds) {
@@ -250,7 +252,7 @@ public class TransferExample {
             else {
                 // Unexpected error - log for human review
                 // This per-txn log allows the app to only log failures
-                System.err.println("Transaction " + err.result().transactionId() + " failed:");
+                System.err.println("Transaction " + err.result().transactionId() + " did not reach commit:");
 
                 err.result().log().logs().forEach(System.err::println);
             }
