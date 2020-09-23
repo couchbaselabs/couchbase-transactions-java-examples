@@ -2,21 +2,32 @@ package example.docker;
 
 import java.io.File;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.couchbase.client.core.cnc.Event;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.json.JsonObject;
+import com.couchbase.transactions.GlobalTracerHack;
 import com.couchbase.transactions.TransactionDurabilityLevel;
 import com.couchbase.transactions.Transactions;
 import com.couchbase.transactions.config.TransactionConfigBuilder;
 import com.couchbase.transactions.log.TransactionEvent;
 import com.moandjiezana.toml.Toml;
 import example.transfer.TransferExample;
+import io.opentelemetry.exporters.zipkin.ZipkinSpanExporter;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.trace.Samplers;
+import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.opentelemetry.sdk.trace.TracerSdkProvider;
+import io.opentelemetry.sdk.trace.config.TraceConfig;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import io.opentelemetry.trace.Span;
+import io.opentelemetry.trace.Tracer;
+import io.prometheus.client.Counter;
+import io.prometheus.client.Histogram;
+import io.prometheus.client.hotspot.DefaultExports;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -37,10 +48,14 @@ import org.springframework.context.annotation.Bean;
  */
 @SpringBootApplication
 public class Application {
-	public static final AtomicInteger transactionCount = new AtomicInteger(0);
+	public static final Counter transactionCount = Counter.build()
+			.name("transactions_count").help("Number of transactions").register();
+	static final Histogram requestLatency = Histogram.build()
+			.name("transaction_latency").help("Transaction latency in milliseconds").register();
 	private final Logger logger = LoggerFactory.getLogger(Application.class);
 
 	public static void main(String[] args) {
+		DefaultExports.initialize();
 		SpringApplication.run(Application.class, args);
 	}
 
@@ -71,6 +86,8 @@ public class Application {
 				String durability = toml.getString("transactions.durability");
 				long iterations = toml.getLong("transactions.iterations");
 				boolean verbose = toml.getBoolean("transactions.verbose_logging");
+
+				String zipkinEndpoint = toml.getString("open_telemetry.zipkin_endpoint");
 
 				long amount = toml.getLong("transfer.amount");
 
@@ -105,6 +122,8 @@ public class Application {
 				if (flushBucket) {
 					cluster.buckets().flushBucket(bucketName);
 				}
+
+				Tracer tracer = configureOpenTelemetry(zipkinEndpoint);
 
 				logger.info("Connected to cluster, starting transactions");
 
@@ -145,15 +164,40 @@ public class Application {
 					collection.upsert(customer1Id, customer1);
 					collection.upsert(customer2Id, customer2);
 
+					Histogram.Timer requestTimer = requestLatency.startTimer();
+
 					TransferExample.transferMoney(transactions, collection, customer1Id, customer2Id, amount);
 
-					transactionCount.incrementAndGet();
+					requestTimer.observeDuration();
+					transactionCount.inc();
 				}
 			} catch (RuntimeException e) {
 				System.err.println("Failed: " + e);
 				System.exit(-1);
 			}
 		};
+	}
+
+	private static Tracer configureOpenTelemetry(String zipkinEndpoint) {
+		TracerSdkProvider tracer = OpenTelemetrySdk.getTracerProvider();
+
+		ZipkinSpanExporter exporter =
+				ZipkinSpanExporter.newBuilder()
+						.setEndpoint(zipkinEndpoint)
+						.setServiceName("transactions-example")
+						.build();
+
+		SpanProcessor processor = BatchSpanProcessor.newBuilder(exporter).build();
+		tracer.addSpanProcessor(processor);
+
+		TraceConfig alwaysOn = TraceConfig.getDefault().toBuilder().setSampler(
+				Samplers.alwaysOn()
+		).build();
+		tracer.updateActiveTraceConfig(alwaysOn);
+
+		GlobalTracerHack.globalTracer = tracer.get("transactions-example");
+
+		return GlobalTracerHack.globalTracer;
 	}
 
 }

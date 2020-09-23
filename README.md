@@ -62,6 +62,17 @@ This is WIP and experiental.
 
 Copy `config.example.toml` to `config.toml` and edit it for your Couchbase cluster configuration.
 
+Optionally, run Zipkin server for OpenTelemetry capture:
+```docker run -d -p 9411:9411 openzipkin/zipkin```
+The default `config.toml` configuration will send to Zipkin on the Docker host.
+Can view the output at `http://localhost:9411/zipkin/`
+
+Two ways of running the application:
+
+Either use:
+```gradle bootRun -Pargs='config.toml'```
+
+Or use Docker:
 ```docker build --tag couchbase-transactions-example:1.0 .```
 
 ```docker run --rm -t --publish 8080:8080 --name te couchbase-transactions-example:1.0```

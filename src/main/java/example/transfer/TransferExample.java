@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -121,6 +120,8 @@ public class TransferExample {
 
         // Create Transactions config
         TransactionConfigBuilder config = TransactionConfigBuilder.create()
+                // Disabling this purely to keep the Zipkin output clean, it should not be disabled for production systems
+                .cleanupLostAttempts(false)
                 .durabilityLevel(transactionDurabilityLevel);
 
         if (verbose) {

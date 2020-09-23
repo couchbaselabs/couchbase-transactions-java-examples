@@ -16,7 +16,7 @@ public class WebController {
 				"<p style='text-align: center; padding: 200px 0; \n" +
 				"    font-family: sans-serif;\n" +
 				"    font-size: 30em;\n" +
-				"    color: #339989;'>" + Integer.toString(Application.transactionCount.get()) + "</p" +
+				"    color: #339989;'>" + Integer.toString((int) Application.transactionCount.get()) + "</p" +
 				"</body>" +
 				"</html>";
 	}

@@ -20,11 +20,14 @@ mainClassName = 'example.docker.Application'
 
 repositories {
     mavenCentral()
+    // Temporary
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
 }
 
 dependencies {
     implementation 'ch.qos.logback:logback-classic:1.1.11'
-    compile group: 'com.couchbase.client', name: 'couchbase-transactions', version: '1.1.0'
+    // 1.2.0-SNAPSHOT required for OpenTelemetry support
+    compile group: 'com.couchbase.client', name: 'couchbase-transactions', version: '1.2.0-SNAPSHOT'
     implementation 'net.sourceforge.argparse4j:argparse4j:0.8.1'
 
     // These dependencies needed only for the Docker example
@@ -33,6 +36,13 @@ dependencies {
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
+    compile 'io.prometheus:simpleclient:0.9.0'
+    compile 'io.prometheus:simpleclient_hotspot:0.9.0'
+    compile 'io.prometheus:simpleclient_pushgateway:0.9.0'
+    compile('io.opentelemetry:opentelemetry-api:0.8.0')
+    compile('io.opentelemetry:opentelemetry-sdk:0.8.0')
+    compile('io.opentelemetry:opentelemetry-exporters-inmemory:0.8.0')
+    compile('io.opentelemetry:opentelemetry-exporters-zipkin:0.8.0')
 }
 
 task game(type:JavaExec) {
