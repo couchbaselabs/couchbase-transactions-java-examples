@@ -18,12 +18,16 @@
         <appender-ref ref="FILE" />
     </root>
 
-    <logger name="com.couchbase.transactions" level="trace">
-        <appender-ref ref="STDOUT" />
-    </logger>
+<!--    <logger name="com.couchbase" level="debug">-->
+<!--        <appender-ref ref="STDOUT" />-->
+<!--    </logger>-->
 
-    <logger name="com.couchbase.transactions.cleanup" level="info">
-    </logger>
+<!--    <logger name="com.couchbase.transactions" level="trace">-->
+<!--        <appender-ref ref="STDOUT" />-->
+<!--    </logger>-->
+
+<!--    <logger name="com.couchbase.transactions.cleanup" level="info">-->
+    <!--    </logger>-->
 
     <logger name="example" level="info">
         <appender-ref ref="STDOUT" />

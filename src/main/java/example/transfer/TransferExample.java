@@ -105,13 +105,13 @@ public class TransferExample {
         }
     }
 
-    private static void run(String clusterName,
+    public static void run(String clusterName,
                             String username,
                             String password,
                             String bucketName,
                             TransactionDurabilityLevel transactionDurabilityLevel,
                             boolean verbose,
-                            int amount) {
+                            long amount) {
 
         // Initialize the Couchbase cluster
         Cluster cluster = Cluster.connect(clusterName, username, password);
@@ -167,17 +167,16 @@ public class TransferExample {
             transferMoney(transactions, collection, "andy", "beth", amount);
         }
         catch (RuntimeException err) {
-            System.err.println("Transaction failed with: " + err.toString());
+            logger.error("Transaction failed with: " + err.toString());
         }
     }
 
 
-
-    private static void transferMoney(Transactions transactions,
+    public static void transferMoney(Transactions transactions,
                                       Collection collection,
                                       String customer1Id,
                                       String customer2Id,
-                                      int amount) {
+                                      long amount) {
         // This shows how to pass values from the transaction lambda
         AtomicReference<String> transferId = new AtomicReference<>();
 

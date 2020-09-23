@@ -1,0 +1,20 @@
+[cluster]
+host = "host_or_ip_of_couchbase_cluster"  # host.docker.internal if on localhost
+username = "couchbase_username"
+password = "couchbase_password"
+bucket = "bucket_name"
+# Whether the bucket should be flushed at the start
+flush_bucket = true
+
+[transactions]
+durability = "majority"
+verbose_logging = true
+# How many transactions to run
+iterations = 10000
+
+[transfer]
+# How much to transfer between the two users
+amount = 50
+
+[web]
+port = 8080

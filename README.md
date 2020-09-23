@@ -56,3 +56,12 @@ Run:
 Details of what's going on in the transaction will be logged to stdout.
 
 You can run with the `--verbose` flag to also display full transactions trace to stdout, or the `--help` flag.
+
+## Docker Example
+This is WIP and experiental.
+
+Copy `config.example.toml` to `config.toml` and edit it for your Couchbase cluster configuration.
+
+```docker build --tag couchbase-transactions-example:1.0 .```
+
+```docker run --rm -t --publish 8080:8080 --name te couchbase-transactions-example:1.0```
