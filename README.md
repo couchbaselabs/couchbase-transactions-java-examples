@@ -58,14 +58,15 @@ Details of what's going on in the transaction will be logged to stdout.
 You can run with the `--verbose` flag to also display full transactions trace to stdout, or the `--help` flag.
 
 ## Docker Example
-This is WIP and experiental.
+This is WIP and experimental.
 
 Copy `config.example.toml` to `config.toml` and edit it for your Couchbase cluster configuration.
 
-Optionally, run Zipkin server for OpenTelemetry capture:
+Optionally, run Zipkin or Jaegar server for OpenTelemetry capture:
 ```docker run -d -p 9411:9411 openzipkin/zipkin```
-The default `config.toml` configuration will send to Zipkin on the Docker host.
+The default `config.toml` configuration (see `zipkin_endpoint`) will send OpenTelemetry span data to port 9411 on the Docker host.
 Can view the output at `http://localhost:9411/zipkin/`
+Alternative you can run Jaegar instead and it will also work.
 
 Two ways of running the application:
 
