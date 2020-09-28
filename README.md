@@ -1,6 +1,13 @@
 # Couchbase Distributed Transactions Examples
 This code-base includes two examples of using the Java implementation of Couchbase Distributed Transactions.
 
+## Pre-requisites
+
+- Couchbase Server 6.6
+- A created bucket.  The examples will create documents in this bucket, and the Docker example can optionally flush it, so it's best to create a temporary bucket.
+  If using a single-node cluster (for example during local development), make sure that the bucket has 0 replicas configured.
+  The default is 1 replica, and this will cause any durable writes (which transactions use, by default), to fail.
+
 ## Game Example
 This example uses the Game Simulation sample bucket provided with Couchbase.
 

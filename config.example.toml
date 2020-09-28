@@ -7,7 +7,8 @@ bucket = "bucket_name"
 flush_bucket = true
 
 [transactions]
-# turn durability to "none" for single node clusters; could also be "persist_to_majority" or "majority_and_persist"
+# Could also be "persist_to_majority" or "majority_and_persist" or "none" (though latter is not supported)
+# If on a single-node cluster make sure buckets have 0 replicas configured
 durability = "majority"
 verbose_logging = true
 # How many transactions to run
