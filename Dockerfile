@@ -1,6 +1,7 @@
 # Use the official image as a parent image.
 #FROM openjdk:11
 FROM gradle:jdk11 as builder
+LABEL Description="Couchbase Transactions Java Demo" Vendor="Couchbase, Inc." Version="0.1"
 
 # Set the working directory.
 WORKDIR /usr/src/app

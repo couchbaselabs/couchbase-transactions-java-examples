@@ -2,7 +2,7 @@
 This code-base includes two examples of using the Java implementation of Couchbase Distributed Transactions.
 
 ## Game Example
-This example is based on the Game Simulation sample bucket provided with Couchbase.
+This example uses the Game Simulation sample bucket provided with Couchbase.
 
 The sample data simulates that of a simple Massively Multiplayer Online game, and includes documents representing:
 
@@ -45,7 +45,7 @@ But it suffices for a simplified example.
 The app takes command-line arguments that point to a particular Couchbase cluster and bucket.  The app will:
 
 - Upsert customer documents "andy" and "beth" on this bucket, with a balance of 100 apiece.
-- Create a transaction that debits Andy's account by a specifed amount and credits it to Beth.
+- Create a transaction that debits Andy's account by a specified amount and credits it to Beth.
 - The transaction also inserts a new record with a random UUID that records the transfer. 
 
 Run:
@@ -74,6 +74,6 @@ Either use:
 ```gradle bootRun -Pargs='config.toml'```
 
 Or use Docker:
-```docker build --tag couchbase-transactions-example:1.0 .```
+```docker build --tag couchbase-transactions-example:0.1 .```
 
-```docker run --rm -t --publish 8080:8080 --name te couchbase-transactions-example:1.0```
+```docker run --rm -t --publish 8080:8080 --name te couchbase-transactions-example:0.1```
