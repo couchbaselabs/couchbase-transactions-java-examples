@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: txnexamplecm
+  namespace: default
+data:
+  clusterHost: 10.96.49.146
+  bucketName: gamesim
+  verbose: "true"
+

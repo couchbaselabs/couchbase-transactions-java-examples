@@ -1,0 +1,36 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cbtransactionsexample
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cbtxns
+  template:
+    metadata:
+      labels:
+        app: cbtxns
+    spec:
+      containers:
+        - name: cbtransactionsexample
+          image: couchbase-transactions-example:0.1
+          volumeMounts:
+            - name: couchbase-user
+              mountPath: "/deployments/txnexample/creds"
+              readOnly: true
+            - name: txnexample-config
+              mountPath: "/deployments/txnexample/config"
+      volumes:
+        - name: txnexample-config
+          configMap:
+            name: txnexamplecm
+        - name: couchbase-user
+          secret:
+            secretName: txn-example-user
+            items:
+              - key: username
+                path: username
+              - key: password
+                path: password

@@ -1,0 +1,34 @@
+apiVersion: couchbase.com/v2
+kind: CouchbaseCluster
+metadata:
+  name: cb-example
+spec:
+  image: couchbase/server:6.6.0
+  security:
+    adminSecret: cb-example-auth
+    rbac:
+      managed: true
+      selector:
+        matchLabels:
+          cluster: txn-cluster
+  networking:
+    exposeAdminConsole: true
+    adminConsoleServices:
+      - data
+    exposedFeatures:
+      - xdcr
+      - client
+    exposedFeatureServiceType: NodePort
+    adminConsoleServiceType: NodePort
+  buckets:
+    managed: true
+  servers:
+    - size: 3
+      name: all_services
+      services:
+        - data
+        - index
+        - query
+        - search
+        - eventing
+        - analytics

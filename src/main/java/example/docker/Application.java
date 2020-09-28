@@ -1,6 +1,10 @@
 package example.docker;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -30,11 +34,13 @@ import io.prometheus.client.Histogram;
 import io.prometheus.client.hotspot.DefaultExports;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 
 /**
  * Starts single process, configures self from files mounted in to the container (username, cluster, password) or ENVVARS
@@ -53,6 +59,9 @@ public class Application {
 	static final Histogram requestLatency = Histogram.build()
 			.name("transaction_latency").help("Transaction latency in milliseconds").register();
 	private final Logger logger = LoggerFactory.getLogger(Application.class);
+
+	@Autowired
+	private Environment env;
 
 	public static void main(String[] args) {
 		DefaultExports.initialize();
@@ -77,7 +86,7 @@ public class Application {
 			Toml toml = new Toml().read(configFile);
 
 			try {
-				String clusterName = toml.getString("cluster.host");
+				String clusterHost = toml.getString("cluster.host");
 				String username = toml.getString("cluster.username");
 				String password = toml.getString("cluster.password");
 				String bucketName = toml.getString("cluster.bucket");
@@ -106,15 +115,27 @@ public class Application {
 						transactionDurabilityLevel = TransactionDurabilityLevel.MAJORITY_AND_PERSIST_TO_ACTIVE;
 						break;
 					default:
-						System.out.println("Unknown durability setting " + durability);
-						System.exit(-1);
+						logger.info("No durability specified; using defaults.");
+				}
+
+				// Override with anything from the config map and load secrets
+				try {
+					username = Files.readString(Path.of("/deployments/txnexample/creds/username"), StandardCharsets.UTF_8);
+					password = Files.readString(Path.of("/deployments/txnexample/creds/password"), StandardCharsets.UTF_8);
+					logger.info("Loaded secrets from K8S environment…");
+					clusterHost = Files.readString(Path.of("/deployments/txnexample/config/clusterHost"), StandardCharsets.UTF_8);
+					bucketName = Files.readString(Path.of("/deployments/txnexample/config/bucketName"), StandardCharsets.UTF_8);
+					verbose = Boolean.parseBoolean(Files.readString(Path.of("/deployments/txnexample/config/verbose"), StandardCharsets.UTF_8));
+					logger.info("Loaded config from K8S environment…");
+				} catch (IOException e) {
+					throw new Exception("Failed to retrieve secrets or config map at startup.", e);
 				}
 
 
-				logger.info("Connecting to cluster {} and opening bucket {}", clusterName, bucketName);
+				logger.info("Connecting to cluster {} and opening bucket {} as user {}", clusterHost, bucketName, username);
 
 				// Initialize the Couchbase cluster
-				Cluster cluster = Cluster.connect(clusterName, username, password);
+				Cluster cluster = Cluster.connect(clusterHost, username, password);
 				Bucket bucket = cluster.bucket(bucketName);
 				Collection collection = bucket.defaultCollection();
 				bucket.waitUntilReady(Duration.ofSeconds(30));
@@ -172,7 +193,10 @@ public class Application {
 					transactionCount.inc();
 				}
 			} catch (RuntimeException e) {
+				logger.error("Failed: {}, pausing 60s before exit", e);
 				System.err.println("Failed: " + e);
+				Thread.sleep(60000);
+				logger.error("Exiting.");
 				System.exit(-1);
 			}
 		};

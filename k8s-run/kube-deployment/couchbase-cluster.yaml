@@ -1,0 +1,73 @@
+apiVersion: couchbase.com/v2
+kind: CouchbaseBucket
+metadata:
+  name: gamesim
+---
+apiVersion: couchbase.com/v2
+kind: CouchbaseCluster
+metadata:
+  name: cb-example
+spec:
+  image: couchbase/server:6.6.0
+  security:
+    adminSecret: cb-example-auth
+    rbac:
+      managed: true
+      selector:
+        matchLabels:
+          cluster: txn-cluster
+  networking:
+    exposeAdminConsole: true
+    adminConsoleServices:
+      - data
+    exposedFeatures:
+      - xdcr
+      - client
+    exposedFeatureServiceType: NodePort
+    adminConsoleServiceType: NodePort
+  buckets:
+    managed: true
+  servers:
+    - size: 3
+      name: all_services
+      services:
+        - data
+        - index
+        - query
+        - search
+        - eventing
+        - analytics
+---
+apiVersion: couchbase.com/v2
+kind: CouchbaseUser
+metadata:
+  name: txnexample
+  labels:
+    cluster: txn-cluster
+spec:
+  fullName: "Transaction Example"
+  authDomain: local
+  authSecret: txn-example-user
+---
+apiVersion: couchbase.com/v2
+kind: CouchbaseGroup
+metadata:
+  name: txn-group
+  labels:
+    cluster: txn-cluster
+spec:
+  roles:
+    - name: bucket_full_access
+      bucket: gamesim
+---
+apiVersion: couchbase.com/v2
+kind: CouchbaseRoleBinding
+metadata:
+  name: txn-role-binding
+spec:
+  subjects:
+    - kind: CouchbaseUser
+      name: txnexample
+  roleRef:
+    kind: CouchbaseGroup
+    name: txn-group
