@@ -7,6 +7,7 @@ This code-base includes two examples of using the Java implementation of Couchba
 - A created bucket.  The examples will create documents in this bucket, and the Docker example can optionally flush it, so it's best to create a temporary bucket.
   If using a single-node cluster (for example during local development), make sure that the bucket has 0 replicas configured.
   The default is 1 replica, and this will cause any durable writes (which transactions use, by default), to fail.
+- JDK 11+.
 
 ## Game Example
 This example uses the Game Simulation sample bucket provided with Couchbase.
@@ -84,3 +85,5 @@ Or use Docker:
 ```docker build --tag couchbase-transactions-example:0.1 .```
 
 ```docker run --rm -t --publish 8080:8080 --name te couchbase-transactions-example:0.1```
+
+A very basic web-server is available on port 8080, showing the count of transactions.
