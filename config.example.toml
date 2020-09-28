@@ -20,3 +20,6 @@ amount = 50
 
 [open_telemetry]
 zipkin_endpoint = "http://host.docker.internal:9411/api/v2/spans"
+
+[prometheus]
+port = 9000

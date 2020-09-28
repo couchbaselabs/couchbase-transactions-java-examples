@@ -68,17 +68,47 @@ You can run with the `--verbose` flag to also display full transactions trace to
 ## Docker Example
 This is WIP and experimental.
 
+### Setup
 Copy `config.example.toml` to `config.toml` and edit it for your Couchbase cluster configuration.
 
+#### OpenTelemetry (Optional)
 Optionally, run Zipkin or Jaegar server for OpenTelemetry capture:
 ```docker run -d -p 9411:9411 openzipkin/zipkin```
-The default `config.toml` configuration (see `zipkin_endpoint`) will send OpenTelemetry span data to port 9411 on the Docker host.
-Can view the output at `http://localhost:9411/zipkin/`
+The default `config.example.toml` configuration (see `zipkin_endpoint`) sends OpenTelemetry span data to port 9411 on the Docker host.
+The output can be viewed at `http://localhost:9411/zipkin/`.
 Alternative you can run Jaegar instead and it will also work.
 
-Two ways of running the application:
+#### Prometheus (Optional)
+Optionally, run Prometheus for metrics capture.
+Create a Prometheus config:
+```
+scrape_configs:
+  - job_name: 'prometheus'
 
-Either use:
+    scrape_interval: 5s
+
+    static_configs:
+      - targets: [
+        # The Docker app - change the IP to your Docker container's
+        '172.17.0.2:9000',
+
+        # Prometheus itself, purely for sanity checking
+        'localhost:9090']
+```
+
+And then run Prometheus with that config:
+```
+docker run --rm -p 9090:9090 -v prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
+```
+You can now visit `http://localhost:9090` to visit the Prometheus UI.
+The metrics exposed by the application are:
+- `transaction_count` showing a cumulative count of the number of transactions.
+- `transaction_latency_bucket` showing a histogram of transaction latencies.
+
+### Running
+There are three ways of running the application from the command line:
+
+Use:
 ```gradle bootRun -Pargs='config.toml'```
 
 Or use Docker:
@@ -86,4 +116,6 @@ Or use Docker:
 
 ```docker run --rm -t --publish 8080:8080 --name te couchbase-transactions-example:0.1```
 
-A very basic web-server is available on port 8080, showing the count of transactions.
+Or use Kubernetes together with Docker - see the `k8s-run` folder for an example.
+
+Once running, a very basic web-server is available on port 8080, showing the count of transactions.

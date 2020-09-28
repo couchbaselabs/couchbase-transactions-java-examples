@@ -31,6 +31,7 @@ import io.opentelemetry.trace.Span;
 import io.opentelemetry.trace.Tracer;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Histogram;
+import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +96,7 @@ public class Application {
 				String durability = toml.getString("transactions.durability");
 				long iterations = toml.getLong("transactions.iterations");
 				boolean verbose = toml.getBoolean("transactions.verbose_logging");
+				int prometheusPort = toml.getLong("prometheus.port").intValue();
 
 				String zipkinEndpoint = toml.getString("open_telemetry.zipkin_endpoint");
 
@@ -146,6 +148,9 @@ public class Application {
 
 				Tracer tracer = configureOpenTelemetry(zipkinEndpoint);
 
+				// Prometheus server
+				HTTPServer server = new HTTPServer(prometheusPort);
+
 				logger.info("Connected to cluster, starting transactions");
 
 				// Create Transactions config
@@ -193,7 +198,7 @@ public class Application {
 					transactionCount.inc();
 				}
 			} catch (RuntimeException e) {
-				logger.error("Failed: {}, pausing 60s before exit", e);
+				logger.error("Failed: {}, pausing 60s before exit", e.toString());
 				System.err.println("Failed: " + e);
 				Thread.sleep(60000);
 				logger.error("Exiting.");
