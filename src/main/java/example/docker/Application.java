@@ -128,7 +128,7 @@ public class Application {
 					verbose = Boolean.parseBoolean(Files.readString(Path.of("/deployments/txnexample/config/verbose"), StandardCharsets.UTF_8));
 					logger.info("Loaded config from K8S environment…");
 				} catch (IOException e) {
-					throw new Exception("Failed to retrieve secrets or config map at startup.", e);
+					logger.info("Failed to retrieve secrets or config map at startup.");
 				}
 
 
