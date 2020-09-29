@@ -4,7 +4,7 @@ metadata:
   name: txnexamplecm
   namespace: default
 data:
-  clusterHost: 10.96.49.146
+  clusterHost: couchbase://cb-example-srv
   bucketName: gamesim
   verbose: "true"
 
