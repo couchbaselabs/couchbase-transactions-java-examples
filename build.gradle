@@ -47,6 +47,7 @@ dependencies {
     compile('io.opentelemetry:opentelemetry-sdk:0.8.0')
     compile('io.opentelemetry:opentelemetry-exporters-inmemory:0.8.0')
     compile('io.opentelemetry:opentelemetry-exporters-zipkin:0.8.0')
+    compile('com.devskiller:jfairy:0.6.4')
 }
 
 task game(type:JavaExec) {

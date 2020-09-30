@@ -19,6 +19,7 @@ import com.couchbase.transactions.Transactions;
 import com.couchbase.transactions.config.TransactionConfigBuilder;
 import com.couchbase.transactions.log.TransactionEvent;
 import com.moandjiezana.toml.Toml;
+import example.game3.GameExample;
 import example.transfer.TransferExample;
 import io.opentelemetry.exporters.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
@@ -61,6 +62,8 @@ public class Application {
 			.name("transaction_latency").help("Transaction latency in milliseconds").register();
 	private final Logger logger = LoggerFactory.getLogger(Application.class);
 
+	private static String bucketName;
+
 	@Autowired
 	private Environment env;
 
@@ -90,7 +93,7 @@ public class Application {
 				String clusterHost = toml.getString("cluster.host");
 				String username = toml.getString("cluster.username");
 				String password = toml.getString("cluster.password");
-				String bucketName = toml.getString("cluster.bucket");
+				bucketName = toml.getString("cluster.bucket");
 				boolean flushBucket = toml.getBoolean("cluster.flush_bucket");
 
 				String durability = toml.getString("transactions.durability");
@@ -172,34 +175,26 @@ public class Application {
 					}
 				});
 
+				GameExample.setupData(cluster, collection);
+
 				for (long i = 0; i < iterations; i ++) {
-					// Setup test data
-					JsonObject customer1 = JsonObject.create()
-							.put("type", "Customer")
-							.put("name", "Andy")
-							.put("balance", 100);
-
-					JsonObject customer2 = JsonObject.create()
-							.put("type", "Customer")
-							.put("name", "Beth")
-							.put("balance", 100);
-
-					String customer1Id = UUID.randomUUID().toString();
-					String customer2Id = UUID.randomUUID().toString();
-
-					collection.upsert(customer1Id, customer1);
-					collection.upsert(customer2Id, customer2);
 
 					Histogram.Timer requestTimer = requestLatency.startTimer();
 
-					TransferExample.transferMoney(transactions, collection, customer1Id, customer2Id, amount);
+					// battle 6 days, go to the store on the 7th
+					for (int j = 0; j < 6; j++) {
+						GameExample.battle(transactions, collection, GameExample.randPlayer(), GameExample.randMonster());
+					}
+
+					GameExample.trade(transactions, collection, GameExample.randPlayer(), GameExample.randPlayer());
 
 					requestTimer.observeDuration();
 					transactionCount.inc();
 				}
+				logger.info("Completed {} transactions.", transactionCount.get());
 			} catch (RuntimeException e) {
 				logger.error("Failed: {}, pausing 60s before exit", e.toString());
-				System.err.println("Failed: " + e);
+				System.err.println("Failed: " + e.getCause());
 				Thread.sleep(60000);
 				logger.error("Exiting.");
 				System.exit(-1);
@@ -227,6 +222,10 @@ public class Application {
 		GlobalTracerHack.globalTracer = tracer.get("transactions-example");
 
 		return GlobalTracerHack.globalTracer;
+	}
+
+	public static String getBucketName() {
+		return bucketName;
 	}
 
 }
