@@ -1,19 +1,19 @@
 package example.game3;
 
 import com.couchbase.client.core.cnc.Event;
+import com.couchbase.client.core.error.CasMismatchException;
+import com.couchbase.client.core.error.CouchbaseException;
 import com.couchbase.client.core.error.DocumentExistsException;
 import com.couchbase.client.core.error.DocumentNotFoundException;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.json.JsonObject;
-import com.couchbase.client.java.kv.GetResult;
-import com.couchbase.client.java.kv.MutationResult;
-import com.couchbase.client.java.kv.ReplaceOptions;
-import com.couchbase.client.java.kv.UpsertOptions;
+import com.couchbase.client.java.kv.*;
 import com.couchbase.client.java.query.QueryResult;
 import com.couchbase.transactions.TransactionDurabilityLevel;
 import com.couchbase.transactions.TransactionGetResult;
+import com.couchbase.transactions.TransactionReplaceOptions;
 import com.couchbase.transactions.Transactions;
 import com.couchbase.transactions.config.TransactionConfigBuilder;
 import com.couchbase.transactions.error.TransactionCommitAmbiguous;
@@ -32,9 +32,13 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.couchbase.client.java.kv.MutateInSpec.decrement;
 
 /**
  * An example of Couchbase Distributed Transactions: please see the README for details.
@@ -181,51 +185,6 @@ public class GameExample {
         // The example.GameServer object emulates the central server for this game
         GameServer gameServer = new GameServer(transactions, collection);
 
-
-
-        // Initialise some sample data - a player and a monster.  This is based on the Game Simulation sample bucket
-        // provided with Couchbase, though that does not have to be installed.
-        String playerId = "player_jane";
-        JsonObject player = JsonObject.create()
-                        .put("experience", 14248)
-                        .put("hitpoints", 23832)
-                        .put("jsonType", "player")
-                        .put("level", 141)
-                        .put("loggedIn", true)
-                        .put("name", "Jane")
-                        .put("uuid", UUID.randomUUID().toString());
-
-        String monsterId = "a_grue";
-        JsonObject monster = JsonObject.create()
-                        .put("experienceWhenKilled", 91)
-                        .put("hitpoints", 4000)
-                        .put("itemProbability", 0.19239324085462631)
-                        .put("jsonType", "monster")
-                        .put("name", "Grue")
-                        .put("uuid", UUID.randomUUID().toString());
-
-        collection.upsert(playerId, player);
-
-        logger.info("Upserted sample player document " + playerId);
-
-        collection.upsert(monsterId, monster);
-
-        logger.info("Upserted sample monster document " + monsterId);
-
-
-        // Now perform the transaction
-        // The player is hitting the monster for a certain amount of damage
-        gameServer.playerHitsMonster(
-                // This UUID identifies this action from the player's client
-                UUID.randomUUID().toString(),
-
-                // This has a 50% chance of killing the monster, which has 4000 hitpoints
-                ThreadLocalRandom.current().nextInt(8000),
-
-                playerId,
-                monsterId);
-
-
         // Shutdown resources cleanly
         transactions.close();
         cluster.disconnect();
@@ -236,6 +195,9 @@ public class GameExample {
     // See http://en.wikipedia.org/wiki/Category:Celtic_legendary_creatures
     private static final String[] monsters = {"Bauchan", "Fachen", "Fuath", "Joint-eater", "Kelpie",
             "Knocker", "Merrow", "Morgen", "Pictish-beast", "Wild-man"};
+
+    // See http://www.ancientmilitary.com/celtic-warriors.htm
+    private static Weapon[] weapons;
 
     public static String randPlayer() {
         return players.get(ThreadLocalRandom.current().nextInt(players.size()));
@@ -249,35 +211,125 @@ public class GameExample {
         logger.debug("{} battles {}", player, monster);
 
         GetResult battlingPlayer = collection.get(player);
+        JsonObject playerJson = battlingPlayer.contentAsObject();
         GetResult battlingMonster = collection.get("m:" + monster);
+        JsonObject monsterJson = battlingMonster.contentAsObject();
 
         if (ThreadLocalRandom.current().nextBoolean()) {
             // player wins!
-            int newHitpoints = battlingMonster.contentAsObject().getInt("hitpoints") - 1;
+            int newHitpoints = monsterJson.getInt("hitpoints") - 1;
+            assert newHitpoints >= 0;
+
+            // if the player beats the monster, they win something
             if (newHitpoints == 0) {
                 // player gets something
+                Weapon wonItem = Weapon.randWeapon();
+                JsonObject bPlayerItems = playerJson.getObject("items");
+                if (bPlayerItems != null) {
+                    Integer invOfWeapon = bPlayerItems.getInt(wonItem.getName());
+                    if (invOfWeapon != null) {
+                        bPlayerItems.put(wonItem.getName(), invOfWeapon + 1);
+                    } else {
+                        bPlayerItems.put(wonItem.getName(), 1);
+                    }
+                } else /* player had no items */ {
+                    JsonObject newPlayerContent = playerJson.put("items", JsonObject.create().put(wonItem.getName(), 1));
+                }
+
                 // reset monster hitpoints
+                int newMonsterHitpoints = ThreadLocalRandom.current().nextInt(10, 100);
+                // arguably should be a CAS, but it doesn't impact game logic if two race to replace.
+                collection.replace("m:" + monster, monsterJson.put("hitpoints", newMonsterHitpoints));
             }
-            ReplaceOptions opts = ReplaceOptions.replaceOptions().cas(battlingMonster.cas());
-            collection.replace("m:" + monster, battlingMonster.contentAsObject().put("hitpoints", newHitpoints), opts);
+
+            // increase player experience
+            long newExperience = playerJson.getLong("experience").longValue();
+            newExperience++;
+            playerJson.put("experience", newExperience);
+
+            // update the player
+            try {
+                collection.replace(player, playerJson, ReplaceOptions.replaceOptions().cas(battlingPlayer.cas()));
+            } catch (CasMismatchException e) {
+                // don't care; could happen since we're not really simulating sessions
+                logger.warn("update of player {} failed due to cas write conflict", player);
+            }
+
+            // reduce the monster hitpoints using Sub-Document API
+            try {
+                collection.mutateIn("m:" + monster, Collections.singletonList(decrement("hitpoints", 1)));
+            } catch (CouchbaseException e) {
+                logger.error("Failed to Sub-Document decrement monster {}", "m:" + monster);
+                throw new RuntimeException("Sub-Document decrement of monster failed.", e);
+            }
 
         } else {
             // monster wins!
+
+            // player loses experience
+            long newExperience = playerJson.getLong("experience").longValue();
+            newExperience--;
+            playerJson.put("experience", newExperience);
+
+            // replace the player
+            try {
+                collection.replace(player, playerJson, ReplaceOptions.replaceOptions().cas(battlingPlayer.cas()));
+            } catch (CasMismatchException e) {
+                // don't care; could happen since we're not really simulating sessions
+                logger.warn("update of player {} failed due to cas write conflict", player);
+            }
+
         }
 
     }
 
+    private static JsonObject addToItems(JsonObject currItems, String itemName) {
+        if (currItems == null) /* player had no items */ {
+            currItems = JsonObject.create().put(itemName, 1);
+        } else {
+            Integer invOfWeapon = currItems.getInt(itemName);
+            if (invOfWeapon != null) {
+                currItems.put(itemName, invOfWeapon + 1);
+            } else {
+                currItems.put(itemName, 1);
+            }
+        }
+        return currItems;
+    }
 
     public static void setupData(Cluster cluster, Collection collection) throws InterruptedException {
 
         boolean dataLoader = true;
+
+        // Weapons, in DB, mostly static so just instantiating here
+         weapons = new Weapon[] {
+                 new Weapon("Javelin", 80, 1),
+                 new Weapon("Harpoon", 40, 2),
+                 new Weapon("Bow", 25, 5),
+                 new Weapon("Sling", 100, 1),
+                 new Weapon("Light Crossbow", 8, 8),
+                 new Weapon("Spear", 30, 10),
+                 new Weapon("Two-hand Hammer", 20, 6),
+                 new Weapon("Sword", 10, 12),
+                 new Weapon("Sword (two-sided)", 8, 15),
+                 new Weapon("Long Sword", 6, 16),
+                 new Weapon("Axe", 5, 22),
+                 new Weapon("Claymore", 1, 25),
+                 // javelins, harpoons, bows and slings
+                 // pila or harpoon-type javelins were carried by Celtic champions
+                 // light crossbows
+                 // close-range weapons, spears, two-hand hammers, axes and swords would be used. The swords were initially short swords, but they later became long swords.
+                 // The Celtic, Celtiberian (that’s a mixed Celtic and Iberian tribe) and Iberian tribes of Hibernia (modern Spain) fashioned a short double-sided sword that was ideal for stabbing. This weapon became the model for the gladius used by the Roman legions. The Celtic spear possessed relatively broad points and were a grand example of this weapon type. Axes, two-hand hammers and two-hand swords (Claymore) were also used, but they were rather rarer weapons.
+         };
+
         JsonObject playerOne = JsonObject.create()
                 .put("name", "Matt Ingenthron")
                 .put("hitpoints", 1000)
                 .put("experience", 100)
                 .put("uuid", UUID.randomUUID().toString())
+                .put("coins", 1000000)
                 .put("type", "player");
-        String keyOne = "u:ingenthr";  // your truly!
+        String keyOne = "u:ingenthr";  // your truly! and a loading sentinel value
         try {
             MutationResult result = collection.insert(keyOne, playerOne);
         } catch (DocumentExistsException e) {
@@ -287,34 +339,46 @@ public class GameExample {
         players.add(keyOne);
 
         if (!dataLoader) {
-            QueryResult queryResult = cluster.query("SELECT `" + Application.getBucketName() + "`.meta.id() WHERE type = \"player\"");
-//            players.addAll(queryResult.rowsAs(class java.lang.String));
-            throw new UnsupportedOperationException("skipping dataload not done yet");
+            QueryResult queryResult = cluster.query("SELECT RAW meta().id FROM " + Application.getBucketName() + " WHERE type = \"player\"");
+            for (String id : queryResult.rowsAs(String.class)) {
+                players.add(id);
+            }
             return;
         }
 
         Fairy fairy = Fairy.create();
 
-        for (int i=0; i<5000; i++) {
-            Person aPerson = fairy.person();
-            JsonObject player = JsonObject.create()
-                    .put("name", aPerson.getFullName())
-                    .put("hitpoints", 100)
-                    .put("experience", 0)
-                    .put("uuid", UUID.randomUUID().toString())
-                    .put("coins", ThreadLocalRandom.current().nextInt(999))
-                    .put("type", "player");
-            String key = "u:" + aPerson.getUsername();
-            collection.upsert(key, player); // there may be dupes
-            players.add(key);
-        }
+        int i = 0;
+        do {
+            try {
+                Person aPerson = fairy.person();
+                JsonObject player = JsonObject.create()
+                        .put("name", aPerson.getFullName())
+                        .put("hitpoints", 100)
+                        .put("experience", ThreadLocalRandom.current().nextInt(50))
+                        .put("uuid", UUID.randomUUID().toString())
+                        .put("coins", ThreadLocalRandom.current().nextInt(999))
+                        .put("type", "player");
+                String key = "u:" + aPerson.getUsername();
+                collection.insert(key, player);
+                players.add(key);
+                i++;
+            } catch (DocumentExistsException existsEx) {
+                // don't care
+            }
+        } while ( i< 4999 /* 5000 with the sentinel */ );
+
 
         for (String monster : monsters) {
             JsonObject monsterObject = JsonObject.create()
                     .put("name", monster)
-                    .put("hitpoints", 10) /* TODO: random */
+                    .put("hitpoints", ThreadLocalRandom.current().nextInt(999))
                     .put("type", "monster");
             collection.insert("m:" + monster, monsterObject);
+        }
+
+        for (Weapon w : weapons) {
+            collection.insert("w:" + w.getName(), w);
         }
 
     }
@@ -322,7 +386,6 @@ public class GameExample {
     public static void trade(Transactions transactions, Collection collection, String randPlayer1, String randPlayer2) {
 
         // here beith a transaction!
-
         try {
 
             // Supply transactional logic inside a lambda - any required retries are handled for you
@@ -336,11 +399,48 @@ public class GameExample {
                 JsonObject player1Content = player1.contentAsObject();
                 JsonObject player2Content = player2.contentAsObject();
 
-                logger.info("In transaction - got player 1's details: " + player1Content);
-                logger.info("In transaction - got player 2's details: " + player2Content);
+                logger.debug("In transaction - got player 1's details: " + player1Content);
+                logger.debug("In transaction - got player 2's details: " + player2Content);
 
-//                int customer1Balance = player1Content.getInt("coins");
-//                int customer2Balance = player2Content.getInt("coins");
+                if (player1Content.getString("uuid").contentEquals(player2Content.getString("uuid"))) {
+                    // cannot trade with yourself.
+                    return;
+                }
+
+                // player 1 offers an appropriate number of coins for something from player 2
+                JsonObject p2Items = player2Content.getObject("items");
+
+                if (p2Items == null || p2Items.isEmpty()) {
+                    logger.debug("No trade today, player2 has nothing to trade.");
+                    return;
+                }
+
+                Set<String> itemsToTrade = p2Items.getNames();
+                String itemToTrade = itemsToTrade.toArray()[ThreadLocalRandom.current().nextInt(0, itemsToTrade.size())].toString();
+
+                if (p2Items.getInt(itemToTrade) <1) {
+                    logger.debug("No trade today, player 2's item is out of stock");
+                }
+
+                String p1WantsA = itemToTrade;
+                Integer p1CurrentCoins = player1Content.getInt("coins");
+                Integer tradeAmount = p1CurrentCoins / Weapon.getWeaponByName(itemToTrade).getRarity();
+
+                if (tradeAmount < 1) {
+                    logger.debug("No trade today, player1 has no coins.");
+                    return;
+                }
+
+                logger.info("Trading {} coins for a {}", tradeAmount, p1WantsA);
+
+                player1Content.put("coins", p1CurrentCoins - tradeAmount);
+                player1Content.put("items", addToItems(player1Content.getObject("items"), p1WantsA));
+
+                player2Content.put("items", removeFromItems(player2Content.getObject("items"), p1WantsA));
+
+                ctx.replace(player1, player1Content);
+                ctx.replace(player2, player2Content);
+
 //
 //                if (customer1Balance >= amount) {
 //                    logger.info("In transaction - customer 1 has sufficient balance, transferring " + amount);
@@ -363,8 +463,8 @@ public class GameExample {
 //                }
 
                 // If we reach here, commit is automatic.
-                logger.info("In transaction - about to commit");
-                // ctx.commit(); // can also, and optionally, explicitly commit
+                logger.debug("In transaction - about to commit");
+                ctx.commit(); // can also, and optionally, explicitly commit
             });
         } catch (TransactionCommitAmbiguous err) {
             System.err.println("Transaction " + err.result().transactionId() + " possibly committed:");
@@ -398,5 +498,10 @@ public class GameExample {
 //            logger.info("After transaction - transfer record: " + transferRecord);
 //        }
 
+    }
+
+    private static JsonObject removeFromItems(JsonObject currItems, String toRemove) {
+        currItems.put(toRemove, currItems.getInt(toRemove) -1);
+        return currItems;
     }
 }

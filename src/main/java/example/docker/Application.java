@@ -6,13 +6,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.UUID;
 
 import com.couchbase.client.core.cnc.Event;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Collection;
-import com.couchbase.client.java.json.JsonObject;
 import com.couchbase.transactions.GlobalTracerHack;
 import com.couchbase.transactions.TransactionDurabilityLevel;
 import com.couchbase.transactions.Transactions;
@@ -20,7 +18,6 @@ import com.couchbase.transactions.config.TransactionConfigBuilder;
 import com.couchbase.transactions.log.TransactionEvent;
 import com.moandjiezana.toml.Toml;
 import example.game3.GameExample;
-import example.transfer.TransferExample;
 import io.opentelemetry.exporters.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.trace.Samplers;
@@ -28,7 +25,6 @@ import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.TracerSdkProvider;
 import io.opentelemetry.sdk.trace.config.TraceConfig;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
-import io.opentelemetry.trace.Span;
 import io.opentelemetry.trace.Tracer;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Histogram;
@@ -147,6 +143,7 @@ public class Application {
 
 				if (flushBucket) {
 					cluster.buckets().flushBucket(bucketName);
+					Thread.sleep(2000);
 				}
 
 				Tracer tracer = configureOpenTelemetry(zipkinEndpoint);
