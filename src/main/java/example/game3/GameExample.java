@@ -422,7 +422,6 @@ public class GameExample {
                     logger.debug("No trade today, player 2's item is out of stock");
                 }
 
-                String p1WantsA = itemToTrade;
                 Integer p1CurrentCoins = player1Content.getInt("coins");
                 Integer tradeAmount = p1CurrentCoins / Weapon.getWeaponByName(itemToTrade).getRarity();
 
@@ -431,12 +430,13 @@ public class GameExample {
                     return;
                 }
 
-                logger.info("Trading {} coins for a {}", tradeAmount, p1WantsA);
+                logger.info("Trading {} coins for a {}", tradeAmount, itemToTrade);
 
                 player1Content.put("coins", p1CurrentCoins - tradeAmount);
-                player1Content.put("items", addToItems(player1Content.getObject("items"), p1WantsA));
+                player1Content.put("items", addToItems(player1Content.getObject("items"), itemToTrade));
 
-                player2Content.put("items", removeFromItems(player2Content.getObject("items"), p1WantsA));
+                player2Content.put("coins", player2Content.getInt("coins") + tradeAmount);
+                player2Content.put("items", removeFromItems(player2Content.getObject("items"), itemToTrade));
 
                 ctx.replace(player1, player1Content);
                 ctx.replace(player2, player2Content);
