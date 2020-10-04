@@ -32,8 +32,20 @@ kubectl port-forward service/cb-example 8091:8091
 This will select one node in the service's deployment.
 
 
+
+Setting up prometheus/grafana through helm
+
+1. get helm 3 (homebrew has it)
+2. add the prometheus-community helm repo prometheus-community	https://prometheus-community.github.io/helm-charts
+3. for a single stack of everything including grafana `helm install prometheus-community/kube-prometheus-stack --name-template cbtxnex`
+
+the default username/password is admin/prom-operator and you would need to port-forward with something like:
+`$ kubectl port-forward service/cbtxnex-grafana 9080:80`
+
 Prometheus K8S notes after installing the "stack"
 kube-prometheus-stack has been installed. Check its status by running:
   kubectl --namespace default get pods -l "release=kube-prometheus-stack-1601616292"
 
 Visit https://github.com/prometheus-operator/kube-prometheus for instructions on how to create & configure Alertmanager and Prometheus instances using the Operator.
+
+
