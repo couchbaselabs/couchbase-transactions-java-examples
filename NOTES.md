@@ -30,3 +30,10 @@ kubectl port-forward service/cb-example 8091:8091
 ```
 
 This will select one node in the service's deployment.
+
+
+Prometheus K8S notes after installing the "stack"
+kube-prometheus-stack has been installed. Check its status by running:
+  kubectl --namespace default get pods -l "release=kube-prometheus-stack-1601616292"
+
+Visit https://github.com/prometheus-operator/kube-prometheus for instructions on how to create & configure Alertmanager and Prometheus instances using the Operator.
