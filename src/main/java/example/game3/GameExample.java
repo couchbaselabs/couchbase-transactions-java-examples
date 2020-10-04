@@ -269,7 +269,11 @@ public class GameExample {
             // player loses experience
             long newExperience = playerJson.getLong("experience").longValue();
             newExperience--;
-            playerJson.put("experience", newExperience);
+            if (newExperience < 0) {
+                playerJson.put("experience" 0);
+            } else {
+                playerJson.put("experience", newExperience);
+            }
 
             // replace the player
             try {
@@ -479,8 +483,13 @@ public class GameExample {
         return currItems;
     }
 
-    private static JsonObject removeFromItems(JsonObject currItems, String toRemove) {
-        currItems.put(toRemove, currItems.getInt(toRemove) -1);
+    private static JsonObject removeFromItems(JsonObject currItems, String itemToDecrement) {
+        int newItemCount = currItems.getInt(itemToDecrement) - 1;
+        if (newItemCount > 0) {
+            currItems.put(itemToDecrement, currItems.getInt(itemToDecrement) - 1);
+        } else {
+            currItems.removeKey(itemToDecrement);
+        }
         return currItems;
     }
 }
