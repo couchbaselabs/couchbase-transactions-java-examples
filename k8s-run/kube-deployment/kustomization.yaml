@@ -1,0 +1,23 @@
+# kustomization.yaml for declarative deployment
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# list of Resource Config to be Applied
+resources:
+  - couchbase-crd.yaml
+  - cb-operator-dac-deployment.yaml
+  - cb-example-secret.yaml
+  - cb-cluster-buckets-users.yaml
+  - txnexample-cm.yaml
+  - txnexample-secret.yaml
+  - txnexample.yaml
+  - zipkin-mem.yaml
+
+
+# namespace to deploy all Resources to
+namespace: default
+
+# labels added to all Resources
+#commonLabels:
+#  app: cbtxns
+#  env: test

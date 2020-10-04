@@ -2,7 +2,6 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  creationTimestamp: null
   name: couchbase-operator-admission
   namespace: default
 
@@ -10,7 +9,6 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: couchbase-operator-admission
 rules:
 - apiGroups:
@@ -46,7 +44,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  creationTimestamp: null
   name: couchbase-operator-admission
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -64,7 +61,6 @@ data:
   tls-private-key-file: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBeFYzVE54Wkk2My9oYVhLMm9NNzgxMnk0TFBpcE9aS2w4S2RsMG1DMU1ib2tITERnCkdaZU9UVXpHUEZVbnNsYVZqSkJwYlFFOFdXRlFIUDNqZnVMMVQ5bkloQnJpV1lWYllLOWh6bXZGbHRkejRxWTMKUzRiRTMvdjBtdVBwbk9iUVJKYUZhdHcvSEFRTCs5ajdyQStoMTcyemg0Vy9jY3Fycnc0czl0SEhPdWxwSW5yRAp5WXhCcCtEQzFhK1NmSWJtQ09GdmlhM1JoU0xabFZweVBFSlZGQk16MUEwL095bGkwWjNKM0VxYnc5TU5BZUxOCk5yUnBOcWIwdEMvcmgwZmZFQisyWjI5RDlVUWhkdVZmcHZJVjN3U3BsVmcrZDFpL2ZRM21PRHJZYlJXK1NXWk0KWkZiVG5jYTJYM1JaQjdOdnJQTTE3V2hyL3k2QjN0M1NWZlJPeFFJREFRQUJBb0lCQUVxQzM0aStpdzBObkdZWQovc1c3SDAyZEovTWlkWkRjd25VV1hhU05DaHNaOFNRN3luOGU3b1JVWmNyRlExVmF4dDdvYmtUTzRKL0YwMTcrCm92SjJjTEtTdjliUDU0Qndqa3owS1hLcTBVL2ZTMHJZQWF3cjF3dlFyVW9FblYrMDdBL1kyOG02R01GVTdjbEkKNDhyVHBBQTFDQ0F6NkZEbmVPVi83bzNJS1BVZUc0OHZOVVN4bFhrMm85d1lTWVpZUzNXRGxkSDVVVWJOa1lSQwprRyt4R0grTk5OSmorRU1qZVlLSklIeU1ER2EyZFZabHJuaVhFRGlMNnNPOTZzZFhBYTlpN0ZXd2VVQ3U2eEFqClNMeU1PQ05mbWFYWjhsZzIzOUx6elVZR0RWU0RVODZxdVRDYkZlcU0zaW0yakNmV2xXVTRCSll3KzQyc0lkeFoKM2QzNDNBa0NnWUVBOEVlSHhOMzJuTldIVzFmd0RkcWN0bnE5VVpjdzhjSGZ1N3J5dVcwOHFveUpNQjVyQXNaWgpGT0Y4WEE5aTRHV3hrS2NoY201cVpyRy8vdTEzTExqYzdEMVFvSlh3REdIb3F4OTMvUE1CeEh2eGZyK1czTkpOCjd2SEVmUmNKTkx1NytvWElxWnR5ZnBzQmFScHBQQnJMYldxVzFFSWFrNGpTUTVzdDdoTjhreWNDZ1lFQTBrZUsKZ21Ndk9zemlqTkNWT1hJOUcxdzg5TVdIbEpUdzlicm9vclNQVnFHTjBYZy9tcG03MVBGVEFBWkRJQ012eU5ROAprMldySGNiUFN6UHFIV0l4VTdveXI2c3FBeEJvRzlFa3FNc3dPN1JTQzJMdVdMUVM1OGpsTmNwdXk2cTR6cER6CjAzYUNEWTlLNUY0NFdiZ1dzNUJNZ3ZhQ1NTSEovR21adWdGTDBqTUNnWUVBbW1yK0FERTkrbERvS25YN1dvdnkKUnZ2ZWkzOEUvM20vVmFDeHVTVlE1Ykpud0Ryc1B0NUdCYnRiOXJZVXIyM3JqYkU3TjVWcVlCRS8rSStZRlcvQQoyem9VaFArWFEvM3dUM2xyM1c0MjVwVlpBRUlVckZtanFEcE1NckFKUkpDYUlFaTJTdm9SdlBmVkVqemRBTG1mCm52UHZkdjM4b25BOTRTRHJoYU9VWGVVQ2dZRUF6ZmJFOUhHeUVTWWR3VStNMm5mSzRzRzE4d3FIZ2tGZ3cxQVEKRFU1T0Y4eWwzRWFzQmdJT3VNU25SNTdhb04vV0xoKzBOYXVmcjhyTHdCMVpjdTU2NGtlKzNkSUpsSGE5Z29HWQpKcnpld1p3ZHdJbG1hL3YxaUpKOTcvSVlFK1ZrbnUvYjQ0UndYbGU4UTNNR1B0clJZWkExWVJHVEM0N05DUzltCkk0cWhlWUVDZ1lCNHgyNHE3YVNiTXAzTGw3KzlnenBIcElIMGlibVE3QjBaU014M21QbUxGakZGN2ZBSXlSdEoKMENhL1JUcjB6K1grVG8zUWpwdnRUQ3YvZ2YrelNWRkZlbVV3TG02c3NjK1B4MGJUMEcxYm5QZHY1MHFmRDdnRwpzSWhWdm9OSnV6bkhqdURSZmpkWnQzZmpscFNNQytGbzdYOEdrTFJGN2VjY1RZZlNuS2pxNkE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
 kind: Secret
 metadata:
-  creationTimestamp: null
   name: couchbase-operator-admission
   namespace: default
 
@@ -72,7 +68,6 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  creationTimestamp: null
   name: couchbase-operator-admission
   namespace: default
 spec:
@@ -83,7 +78,6 @@ spec:
   strategy: {}
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: couchbase-operator-admission
     spec:
@@ -118,13 +112,11 @@ spec:
       - name: couchbase-operator-admission
         secret:
           secretName: couchbase-operator-admission
-status: {}
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  creationTimestamp: null
   name: couchbase-operator-admission
   namespace: default
 spec:
@@ -134,14 +126,11 @@ spec:
     targetPort: 8443
   selector:
     app: couchbase-operator-admission
-status:
-  loadBalancer: {}
 
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
-  creationTimestamp: null
   name: couchbase-operator-admission
 webhooks:
 - clientConfig:
@@ -176,7 +165,6 @@ webhooks:
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
-  creationTimestamp: null
   name: couchbase-operator-admission
 webhooks:
 - clientConfig:
@@ -211,7 +199,6 @@ webhooks:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  creationTimestamp: null
   name: couchbase-operator
   namespace: default
 
@@ -219,7 +206,6 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  creationTimestamp: null
   name: couchbase-operator
   namespace: default
 rules:
@@ -323,7 +309,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  creationTimestamp: null
   name: couchbase-operator
   namespace: default
 roleRef:
@@ -339,7 +324,6 @@ subjects:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  creationTimestamp: null
   name: couchbase-operator
   namespace: default
 spec:
@@ -350,7 +334,6 @@ spec:
   strategy: {}
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: couchbase-operator
     spec:
@@ -382,13 +365,11 @@ spec:
             scheme: HTTP
         resources: {}
       serviceAccountName: couchbase-operator
-status: {}
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  creationTimestamp: null
   name: couchbase-operator
   namespace: default
 spec:
@@ -403,6 +384,4 @@ spec:
     targetPort: 8383
   selector:
     app: couchbase-operator
-status:
-  loadBalancer: {}
 
