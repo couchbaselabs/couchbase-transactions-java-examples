@@ -283,20 +283,6 @@ public class GameExample {
 
     }
 
-    private static JsonObject addToItems(JsonObject currItems, String itemName) {
-        if (currItems == null) /* player had no items */ {
-            currItems = JsonObject.create().put(itemName, 1);
-        } else {
-            Integer invOfWeapon = currItems.getInt(itemName);
-            if (invOfWeapon != null) {
-                currItems.put(itemName, invOfWeapon + 1);
-            } else {
-                currItems.put(itemName, 1);
-            }
-        }
-        return currItems;
-    }
-
     public static void setupData(Cluster cluster, Collection collection) throws InterruptedException {
 
         boolean dataLoader = true;
@@ -383,9 +369,19 @@ public class GameExample {
 
     }
 
+    /**
+     * Trade an item for coins between two specified random players.
+     *
+     * In game play simulation, this method demonstrates a transaction between two players. While this doesn't
+     * show this, it is possible for a transaction to span collections or even buckets.
+     *
+     * @param transactions transactions instance to be used
+     * @param collection collection where the users exist
+     * @param randPlayer1 first player
+     * @param randPlayer2 second player
+     */
     public static void trade(Transactions transactions, Collection collection, String randPlayer1, String randPlayer2) {
 
-        // here beith a transaction!
         try {
 
             // Supply transactional logic inside a lambda - any required retries are handled for you
@@ -394,7 +390,6 @@ public class GameExample {
                 // getOrError means "fail the transaction if that key does not exist"
                 TransactionGetResult player1 = ctx.get(collection, randPlayer1);
                 TransactionGetResult player2 = ctx.get(collection, randPlayer2);
-                // Optional<TransactionJsonDocument> customer2Opt = ctx.get(collection, customer2Id);
 
                 JsonObject player1Content = player1.contentAsObject();
                 JsonObject player2Content = player2.contentAsObject();
@@ -403,25 +398,31 @@ public class GameExample {
                 logger.debug("In transaction - got player 2's details: " + player2Content);
 
                 if (player1Content.getString("uuid").contentEquals(player2Content.getString("uuid"))) {
-                    // cannot trade with yourself.
+                    logger.debug("Cannot trade with self. The user {} with UUID {} was supplied for both sides of the trade",
+                            randPlayer1, player1Content.getString("uuid"));
                     return;
                 }
 
-                // player 1 offers an appropriate number of coins for something from player 2
+                // check to be sure there is something to trade
                 JsonObject p2Items = player2Content.getObject("items");
-
                 if (p2Items == null || p2Items.isEmpty()) {
                     logger.debug("No trade today, player2 has nothing to trade.");
                     return;
                 }
 
+                // randomly pick something to trade
                 Set<String> itemsToTrade = p2Items.getNames();
-                String itemToTrade = itemsToTrade.toArray()[ThreadLocalRandom.current().nextInt(0, itemsToTrade.size())].toString();
+                String itemToTrade = itemsToTrade
+                        .toArray()[ThreadLocalRandom.current().nextInt(0, itemsToTrade.size())]
+                        .toString();
 
+                // make sure the trader has it in stock
                 if (p2Items.getInt(itemToTrade) <1) {
                     logger.debug("No trade today, player 2's item is out of stock");
+                    return;
                 }
 
+                // player 1 offers an appropriate number of coins for something from player 2
                 Integer p1CurrentCoins = player1Content.getInt("coins");
                 Integer tradeAmount = p1CurrentCoins / Weapon.getWeaponByName(itemToTrade).getRarity();
 
@@ -441,37 +442,16 @@ public class GameExample {
                 ctx.replace(player1, player1Content);
                 ctx.replace(player2, player2Content);
 
-//
-//                if (customer1Balance >= amount) {
-//                    logger.info("In transaction - customer 1 has sufficient balance, transferring " + amount);
-//
-//                    player1Content.put("balance", customer1Balance - amount);
-//                    player2Content.put("balance", customer2Balance + amount);
-//
-//                    logger.info("In transaction - changing customer 1's balance to: " + player1Content.getInt("balance"));
-//                    logger.info("In transaction - changing customer 2's balance to: " + player2Content.getInt("balance"));
-//
-//                    ctx.replace(player1, player1Content);
-//                    ctx.replace(player2, player2Content);
-//                }
-//                else {
-//                    logger.info("In transaction - customer 1 has insufficient balance to transfer " + amount);
-//
-//                    // Rollback is automatic on a thrown exception.  This will also cause the transaction to fail
-//                    // with a TransactionFailed containing this InsufficientFunds as the getCause() - see below.
-//                    throw new InsufficientFunds();
-//                }
-
                 // If we reach here, commit is automatic.
                 logger.debug("In transaction - about to commit");
                 ctx.commit(); // can also, and optionally, explicitly commit
             });
         } catch (TransactionCommitAmbiguous err) {
+            // This could happen in certain system failure cases, e.g. network failure after sending the commit
             System.err.println("Transaction " + err.result().transactionId() + " possibly committed:");
             err.result().log().logs().forEach(System.err::println);
         } catch (TransactionFailed err) {
-
-            // ctx.getOrError can raise a DocumentNotFoundException
+            // ctx.getOrError can raise a DocumentNotFoundException if not initialized completely
             if (err.getCause() instanceof DocumentNotFoundException) {
                 throw new RuntimeException("Could not find player.");
             }
@@ -483,21 +463,20 @@ public class GameExample {
                 err.result().log().logs().forEach(System.err::println);
             }
         }
+    }
 
-
-        // Post-transaction, see the results:
-//        JsonObject customer1 = collection.get(customer1Id).contentAsObject();
-//        JsonObject customer2 = collection.get(customer2Id).contentAsObject();
-//
-//        logger.info("After transaction - got customer 1's details: " + customer1);
-//        logger.info("After transaction - got customer 2's details: " + customer2);
-//
-//        if (transferId.get() != null) {
-//            JsonObject transferRecord = collection.get(transferId.get()).contentAsObject();
-//
-//            logger.info("After transaction - transfer record: " + transferRecord);
-//        }
-
+    private static JsonObject addToItems(JsonObject currItems, String itemName) {
+        if (currItems == null) /* player had no items */ {
+            currItems = JsonObject.create().put(itemName, 1);
+        } else {
+            Integer invOfWeapon = currItems.getInt(itemName);
+            if (invOfWeapon != null) {
+                currItems.put(itemName, invOfWeapon + 1);
+            } else {
+                currItems.put(itemName, 1);
+            }
+        }
+        return currItems;
     }
 
     private static JsonObject removeFromItems(JsonObject currItems, String toRemove) {
