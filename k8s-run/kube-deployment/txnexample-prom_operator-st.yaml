@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations:
+    meta.helm.sh/release-name: cbtxnex
+    meta.helm.sh/release-namespace: default
+  creationTimestamp: "2020-10-04T19:31:36Z"
+  generation: 1
+  labels:
+    app: kube-prometheus-stack-coredns
+    app.kubernetes.io/managed-by: Helm
+    chart: kube-prometheus-stack-9.4.6
+    heritage: Helm
+    release: cbtxnex
+  name: cbtxnex-kube-prometheus-st-coredns
+  namespace: default
+  resourceVersion: "36571"
+  selfLink: /apis/monitoring.coreos.com/v1/namespaces/default/servicemonitors/cbtxnex-kube-prometheus-st-coredns
+  uid: f59d0613-1a7a-4f05-b64b-aeb70aa99314
+spec:
+  endpoints:
+  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    port: metrics
+  jobLabel: jobLabel
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app: cbtxns
