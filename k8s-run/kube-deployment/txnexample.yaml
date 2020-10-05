@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: cbtransactionsexample
-          image: couchbase-transactions-example:0.1
+          image: ingenthr/couchbase-transactions-example:0.1.2
           volumeMounts:
             - name: couchbase-user
               mountPath: "/deployments/txnexample/creds"
@@ -34,3 +34,18 @@ spec:
                 path: username
               - key: password
                 path: password
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: txnexample
+  labels:
+    app: cbtxns
+spec:
+  selector:
+    app: cbtxns
+  ports:
+    - port: 8080
+      name: txnhttp
+    - port: 9000
+      name: metrics
