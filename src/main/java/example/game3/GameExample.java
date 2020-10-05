@@ -13,7 +13,6 @@ import com.couchbase.client.java.kv.*;
 import com.couchbase.client.java.query.QueryResult;
 import com.couchbase.transactions.TransactionDurabilityLevel;
 import com.couchbase.transactions.TransactionGetResult;
-import com.couchbase.transactions.TransactionReplaceOptions;
 import com.couchbase.transactions.Transactions;
 import com.couchbase.transactions.config.TransactionConfigBuilder;
 import com.couchbase.transactions.error.TransactionCommitAmbiguous;
@@ -36,7 +35,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.couchbase.client.java.kv.MutateInSpec.decrement;
 
