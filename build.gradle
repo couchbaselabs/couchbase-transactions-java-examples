@@ -13,7 +13,7 @@ plugins {
 apply plugin: 'java'
 apply plugin: 'application'
 
-version '1.0.0'
+version '0.1.0'
 
 mainClassName = 'example.docker.Application'
 
@@ -33,6 +33,7 @@ dependencies {
     // 1.2.0-SNAPSHOT required for OpenTelemetry support
     compile group: 'com.couchbase.client', name: 'couchbase-transactions', version: '1.2.2-SNAPSHOT'
     compile group: 'com.couchbase.client', name: 'java-client', version: '3.0.8'
+    compile group: 'com.couchbase.client', name: 'scala-client_2.12', version: '1.0.8'
     implementation 'net.sourceforge.argparse4j:argparse4j:0.8.1'
 
     // These dependencies needed only for the Docker example
