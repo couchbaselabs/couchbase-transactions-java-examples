@@ -389,7 +389,6 @@ public class GameExample {
             // Supply transactional logic inside a lambda - any required retries are handled for you
             transactions.run(ctx -> {
 
-                // getOrError means "fail the transaction if that key does not exist"
                 TransactionGetResult player1 = ctx.get(collection, randPlayer1);
                 TransactionGetResult player2 = ctx.get(collection, randPlayer2);
 
