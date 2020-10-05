@@ -41,6 +41,7 @@ metadata:
   name: txnexample
   labels:
     app: cbtxns
+    release: cbtxnex
 spec:
   selector:
     app: cbtxns
