@@ -2,6 +2,13 @@ apiVersion: couchbase.com/v2
 kind: CouchbaseBucket
 metadata:
   name: gamesim
+spec:
+  compressionMode: passive
+  conflictResolution: seqno
+  evictionPolicy: valueOnly
+  ioPriority: high
+  memoryQuota: 100Mi
+  replicas: 1
 ---
 apiVersion: couchbase.com/v2
 kind: CouchbaseCluster
@@ -29,14 +36,12 @@ spec:
     managed: true
   servers:
     - size: 3
-      name: all_services
+      name: some_services
       services:
         - data
         - index
         - query
         - search
-        - eventing
-        - analytics
 ---
 apiVersion: couchbase.com/v2
 kind: CouchbaseUser
