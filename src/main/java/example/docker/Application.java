@@ -40,21 +40,12 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 
-/**
- * Starts single process, configures self from files mounted in to the container (username, cluster, password) or ENVVARS
- * Runs a small loop (probably need some tuneables from ^) that carries out a transaction
- * Runs a small web page that shows what it’s doing, maybe just number of txns done or some other counter.  no fancy formatting, that’s for Grafana
- * Exports stats in Prometheus format, like retries  (the format is very simple and well documented)
- * Can be configured with OTel
- *
- *
- * The way I hope to use this is have a cluster and the app both in K8S, and demonstrate scaling up the “service” that is doing transactions, seeing the increased throughput and possibly latency through the stats/OTel.
- */
 @SpringBootApplication
 public class Application {
 	public static final Counter transactionCount = Counter.build()
 			.name("transactions_count").help("Number of transactions").register();
 	static final Histogram requestLatency = Histogram.build()
+			.buckets(0.0175, 0.02, 0.0225, 0.0250, 0.0275, 0.03, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10)
 			.name("transaction_latency").help("Transaction latency in milliseconds").register();
 	private final Logger logger = LoggerFactory.getLogger(Application.class);
 
