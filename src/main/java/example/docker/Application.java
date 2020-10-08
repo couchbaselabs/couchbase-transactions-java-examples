@@ -45,7 +45,7 @@ public class Application {
 	public static final Counter transactionCount = Counter.build()
 			.name("transactions_count").help("Number of transactions").register();
 	static final Histogram requestLatency = Histogram.build()
-			.buckets(0.0175, 0.02, 0.0225, 0.0250, 0.0275, 0.03, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10)
+			.buckets(0.0250, 0.0375, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 40, 100)
 			.name("transaction_latency").help("Transaction latency in milliseconds").register();
 	private final Logger logger = LoggerFactory.getLogger(Application.class);
 
