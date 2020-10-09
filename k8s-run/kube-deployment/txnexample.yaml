@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: cbtransactionsexample
-          image: ingenthr/couchbase-transactions-example:0.1.4
+          image: ingenthr/couchbase-transactions-example:0.1.5
           volumeMounts:
             - name: couchbase-user
               mountPath: "/deployments/txnexample/creds"
