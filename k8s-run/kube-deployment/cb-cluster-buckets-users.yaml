@@ -9,6 +9,7 @@ spec:
   ioPriority: high
   memoryQuota: 100Mi
   replicas: 1
+  enableFlush: true
 ---
 apiVersion: couchbase.com/v2
 kind: CouchbaseCluster
