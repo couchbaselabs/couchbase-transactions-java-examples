@@ -1,6 +1,6 @@
 # Use the official image as a parent image.
 FROM adoptopenjdk:11-jre-hotspot
-LABEL Description="Couchbase Transactions Java Demo" Vendor="Couchbase, Inc." Version="0.1.3"
+LABEL Description="Couchbase Transactions Java Demo" Vendor="Couchbase, Inc." Version="0.1.4"
 
 # Set the working directory.
 
