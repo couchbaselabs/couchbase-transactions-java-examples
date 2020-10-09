@@ -1,6 +1,7 @@
 # Use the official image as a parent image.
 FROM adoptopenjdk:11-jre-hotspot
-ENV TXNEXAMPLE_VER=0.1.5
+ENV TXNEXAMPLE_VER=0.1.6
+ENV RUN_CMD=/opt/app/TransactionsExample-${TXNEXAMPLE_VER}-all.jar
 LABEL Description="Couchbase Transactions Java Demo" Vendor="Couchbase, Inc." Version="${TXNEXAMPLE_VER}-all.jar"
 
 # Set the working directory.
@@ -10,7 +11,7 @@ RUN mkdir /opt/app
 COPY config.toml /opt/app
 
 COPY build/libs/TransactionsExample-${TXNEXAMPLE_VER}-all.jar /opt/app
-CMD ["java", "-jar", "/opt/app/TransactionsExample-${TXNEXAMPLE_VER}-all.jar", "/opt/app/config.toml"]
+CMD ["java", "-jar", "/opt/app/TransactionsExample-0.1.5-all.jar", "/opt/app/config.toml"]
 
 # Add metadata to the image to describe which port the container is listening on at runtime.
 # Web port
