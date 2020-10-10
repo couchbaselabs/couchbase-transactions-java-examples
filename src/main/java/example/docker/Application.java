@@ -44,9 +44,11 @@ import org.springframework.core.env.Environment;
 public class Application {
 	public static final Counter transactionCount = Counter.build()
 			.name("transactions_count").help("Number of transactions").register();
+	public static final Counter battleCount = Counter.build()
+			.name("battle_count").help("Number of battles").register();
 	static final Histogram requestLatency = Histogram.build()
-			.buckets(0.0250, 0.0375, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 40, 100)
-			.name("transaction_latency").help("Transaction latency in milliseconds").register();
+			.buckets(0.000250, 0.000375, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, .4, 1, 2)
+			.name("transaction_latency").help("Transaction latency in seconds").register();
 	private final Logger logger = LoggerFactory.getLogger(Application.class);
 
 	private static String bucketName;
@@ -167,13 +169,14 @@ public class Application {
 
 				for (long i = 0; i < iterations; i ++) {
 
-					Histogram.Timer requestTimer = requestLatency.startTimer();
 
 					// battle 6 days, go to the store on the 7th
 					for (int j = 0; j < 6; j++) {
 						GameExample.battle(transactions, collection, GameExample.randPlayer(), GameExample.randMonster());
+						battleCount.inc();
 					}
 
+					Histogram.Timer requestTimer = requestLatency.startTimer();
 					GameExample.trade(transactions, collection, GameExample.randPlayer(), GameExample.randPlayer());
 
 					requestTimer.observeDuration();
@@ -191,6 +194,12 @@ public class Application {
 	}
 
 	private static Tracer configureOpenTelemetry(String zipkinEndpoint) {
+
+		if (zipkinEndpoint.equalsIgnoreCase("disabled")) {
+			LoggerFactory.getLogger(Application.class).info("Not enabling zipkin tracing.");
+			return null;
+		}
+
 		TracerSdkProvider tracer = OpenTelemetrySdk.getTracerProvider();
 
 		ZipkinSpanExporter exporter =
