@@ -28,23 +28,23 @@ repositories {
 
 dependencies {
     implementation 'ch.qos.logback:logback-classic:1.1.11'
-    compile group: 'com.couchbase.client', name: 'couchbase-transactions', version: '1.2.1'
+    implementation group: 'com.couchbase.client', name: 'couchbase-transactions', version: '1.2.1'
     implementation 'net.sourceforge.argparse4j:argparse4j:0.8.1'
 
     // These dependencies needed only for the Docker example
-    compile 'com.moandjiezana.toml:toml4j:0.7.2'
+    implementation 'com.moandjiezana.toml:toml4j:0.7.2'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
-    compile 'io.prometheus:simpleclient:0.9.0'
-    compile 'io.prometheus:simpleclient_hotspot:0.9.0'
-    compile 'io.prometheus:simpleclient_httpserver:0.9.0'
-    compile('io.opentelemetry:opentelemetry-api:0.8.0')
-    compile('io.opentelemetry:opentelemetry-sdk:0.8.0')
-    compile('io.opentelemetry:opentelemetry-exporters-inmemory:0.8.0')
-    compile('io.opentelemetry:opentelemetry-exporters-zipkin:0.8.0')
-    compile('com.devskiller:jfairy:0.6.4')
+    implementation 'io.prometheus:simpleclient:0.9.0'
+    implementation 'io.prometheus:simpleclient_hotspot:0.9.0'
+    implementation 'io.prometheus:simpleclient_httpserver:0.9.0'
+    implementation('io.opentelemetry:opentelemetry-api:0.8.0')
+    implementation('io.opentelemetry:opentelemetry-sdk:0.8.0')
+    implementation('io.opentelemetry:opentelemetry-exporters-inmemory:0.8.0')
+    implementation('io.opentelemetry:opentelemetry-exporters-zipkin:0.8.0')
+    implementation('com.devskiller:jfairy:0.6.4')
 }
 
 task game(type:JavaExec) {
