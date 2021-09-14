@@ -26,12 +26,17 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    opentelemetryVersion = '1.5.0'
+}
+
 dependencies {
     implementation 'ch.qos.logback:logback-classic:1.1.11'
     implementation group: 'com.couchbase.client', name: 'couchbase-transactions', version: '1.2.1'
     implementation 'net.sourceforge.argparse4j:argparse4j:0.8.1'
 
     // These dependencies needed only for the Docker example
+    implementation group: 'com.couchbase.client', name: 'tracing-opentelemetry', version: '1.0.1'
     implementation 'com.moandjiezana.toml:toml4j:0.7.2'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
@@ -40,10 +45,12 @@ dependencies {
     implementation 'io.prometheus:simpleclient:0.9.0'
     implementation 'io.prometheus:simpleclient_hotspot:0.9.0'
     implementation 'io.prometheus:simpleclient_httpserver:0.9.0'
-    implementation('io.opentelemetry:opentelemetry-api:0.8.0')
-    implementation('io.opentelemetry:opentelemetry-sdk:0.8.0')
-    implementation('io.opentelemetry:opentelemetry-exporters-inmemory:0.8.0')
-    implementation('io.opentelemetry:opentelemetry-exporters-zipkin:0.8.0')
+    implementation("io.opentelemetry:opentelemetry-api:$opentelemetryVersion")
+    implementation("io.opentelemetry:opentelemetry-sdk:$opentelemetryVersion")
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp:$opentelemetryVersion")
+//    implementation("io.opentelemetry:opentelemetry-exporters-otlp:$opentelemetryVersion")
+//    implementation("io.opentelemetry:opentelemetry-exporters-inmemory:$opentelemetryVersion")
+//    implementation("io.opentelemetry:opentelemetry-exporters-zipkin:$opentelemetryVersion")
     implementation('com.devskiller:jfairy:0.6.4')
 }
 

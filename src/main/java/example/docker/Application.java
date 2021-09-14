@@ -1,31 +1,27 @@
 package example.docker;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-
 import com.couchbase.client.core.cnc.Event;
+import com.couchbase.client.core.cnc.RequestTracer;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
+import com.couchbase.client.java.ClusterOptions;
 import com.couchbase.client.java.Collection;
-import com.couchbase.transactions.GlobalTracerHack;
+import com.couchbase.client.java.env.ClusterEnvironment;
+import com.couchbase.client.tracing.opentelemetry.OpenTelemetryRequestTracer;
 import com.couchbase.transactions.TransactionDurabilityLevel;
 import com.couchbase.transactions.Transactions;
 import com.couchbase.transactions.config.TransactionConfigBuilder;
 import com.couchbase.transactions.log.TransactionEvent;
 import com.moandjiezana.toml.Toml;
 import example.game3.GameExample;
-import io.opentelemetry.exporters.zipkin.ZipkinSpanExporter;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.trace.Samplers;
-import io.opentelemetry.sdk.trace.SpanProcessor;
-import io.opentelemetry.sdk.trace.TracerSdkProvider;
-import io.opentelemetry.sdk.trace.config.TraceConfig;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
-import io.opentelemetry.trace.Tracer;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.exporter.HTTPServer;
@@ -39,6 +35,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
 
 @SpringBootApplication
 public class Application {
@@ -128,8 +131,15 @@ public class Application {
 
 				logger.info("Connecting to cluster {} and opening bucket {} as user {}", clusterHost, bucketName, username);
 
+				OpenTelemetry tracer = configureOpenTelemetry(zipkinEndpoint);
+				RequestTracer requestTracer = OpenTelemetryRequestTracer.wrap(tracer);
+
 				// Initialize the Couchbase cluster
-				Cluster cluster = Cluster.connect(clusterHost, username, password);
+				ClusterEnvironment env = ClusterEnvironment.builder()
+						.requestTracer(requestTracer)
+						.build();
+				Cluster cluster = Cluster.connect(clusterHost, ClusterOptions.clusterOptions(username, password)
+						.environment(env));
 				Bucket bucket = cluster.bucket(bucketName);
 				Collection collection = bucket.defaultCollection();
 				bucket.waitUntilReady(Duration.ofSeconds(30));
@@ -138,8 +148,6 @@ public class Application {
 					cluster.buckets().flushBucket(bucketName);
 					Thread.sleep(2000);
 				}
-
-				Tracer tracer = configureOpenTelemetry(zipkinEndpoint);
 
 				// Prometheus server
 				HTTPServer server = new HTTPServer(prometheusPort);
@@ -182,7 +190,12 @@ public class Application {
 					requestTimer.observeDuration();
 					transactionCount.inc();
 				}
+
 				logger.info("Completed {} transactions.", transactionCount.get());
+
+				env.shutdown();
+				cluster.disconnect();
+
 			} catch (RuntimeException e) {
 				logger.error("Failed: {}, pausing 60s before exit", e.toString());
 				System.err.println("Failed: " + e.getCause());
@@ -193,32 +206,22 @@ public class Application {
 		};
 	}
 
-	private static Tracer configureOpenTelemetry(String zipkinEndpoint) {
+	private static OpenTelemetry configureOpenTelemetry(String zipkinEndpoint) {
 
 		if (zipkinEndpoint.equalsIgnoreCase("disabled")) {
 			LoggerFactory.getLogger(Application.class).info("Not enabling zipkin tracing.");
 			return null;
 		}
 
-		TracerSdkProvider tracer = OpenTelemetrySdk.getTracerProvider();
+		SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
+				.setSampler(Sampler.alwaysOn())
+				.addSpanProcessor(BatchSpanProcessor.builder(OtlpGrpcSpanExporter.builder().build()).build())
+				.build();
 
-		ZipkinSpanExporter exporter =
-				ZipkinSpanExporter.newBuilder()
-						.setEndpoint(zipkinEndpoint)
-						.setServiceName("transactions-example")
-						.build();
-
-		SpanProcessor processor = BatchSpanProcessor.newBuilder(exporter).build();
-		tracer.addSpanProcessor(processor);
-
-		TraceConfig alwaysOn = TraceConfig.getDefault().toBuilder().setSampler(
-				Samplers.alwaysOn()
-		).build();
-		tracer.updateActiveTraceConfig(alwaysOn);
-
-		GlobalTracerHack.globalTracer = tracer.get("transactions-example");
-
-		return GlobalTracerHack.globalTracer;
+		return OpenTelemetrySdk.builder()
+				.setTracerProvider(sdkTracerProvider)
+				.setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+				.buildAndRegisterGlobal();
 	}
 
 	public static String getBucketName() {
