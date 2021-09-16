@@ -10,7 +10,7 @@ This code-base includes two examples of using the Java implementation of Couchba
 - JDK 11+.
 
 ## Game Example
-This example uses the Game Simulation sample bucket provided with Couchbase.
+This example uses the Game Simulation sample bucket provided with Couchbase.true
 
 The sample data simulates that of a simple Massively Multiplayer Online game, and includes documents representing:
 

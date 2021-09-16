@@ -1,0 +1,16 @@
+version: "3.3"
+services:
+  application:
+    build: .
+    ports:
+      - "8080:8080"
+  zipkin:
+      image: openzipkin/zipkin
+      ports:
+        - "9411:9411"
+  prometheus:
+      image: prom/prometheus
+      ports:
+        - "9090:9090"
+      volumes:
+        - prometheus.yml:/etc/prometheus/prometheus.yml

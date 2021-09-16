@@ -1,0 +1,11 @@
+scrape_configs:
+  - job_name: 'prometheus'
+
+    scrape_interval: 5s
+
+    static_configs:
+      - targets: [
+          'application:9000',
+
+          # Prometheus itself, purely for sanity checking
+          'localhost:9090']
