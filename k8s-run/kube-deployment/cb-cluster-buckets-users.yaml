@@ -17,6 +17,17 @@ metadata:
   name: cb-example
 spec:
   image: couchbase/server:6.6.0
+  cluster:
+    autoCompaction:
+      databaseFragmentationThreshold:
+        percent: 99
+      viewFragmentationThreshold:
+        percent: 99
+      parallelCompaction: false
+      timeWindow:
+        start: 08:00
+        end: 20:00
+        abortCompactionOutsideWindow: true
   security:
     adminSecret: cb-example-auth
     rbac:
@@ -43,6 +54,11 @@ spec:
         - index
         - query
         - search
+# The following are useful if it's desired to have DB nodes with different resources from where the app is running
+#      pod:
+#        spec:
+#          nodeSelector:
+#            cloud.google.com/gke-nodepool: bigger
 ---
 apiVersion: couchbase.com/v2
 kind: CouchbaseUser
