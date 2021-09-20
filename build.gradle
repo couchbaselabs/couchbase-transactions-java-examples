@@ -33,6 +33,7 @@ ext {
 dependencies {
     implementation 'ch.qos.logback:logback-classic:1.1.11'
     implementation group: 'com.couchbase.client', name: 'couchbase-transactions', version: '1.2.1'
+    implementation group: 'com.couchbase.client', name: 'java-client', version: '3.2.1'
     implementation 'net.sourceforge.argparse4j:argparse4j:0.8.1'
 
     // These dependencies needed only for the Docker example
@@ -48,9 +49,9 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-api:$opentelemetryVersion")
     implementation("io.opentelemetry:opentelemetry-sdk:$opentelemetryVersion")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp:$opentelemetryVersion")
-//    implementation("io.opentelemetry:opentelemetry-exporters-otlp:$opentelemetryVersion")
-//    implementation("io.opentelemetry:opentelemetry-exporters-inmemory:$opentelemetryVersion")
-//    implementation("io.opentelemetry:opentelemetry-exporters-zipkin:$opentelemetryVersion")
+    implementation("io.opentelemetry:opentelemetry-exporter-zipkin:$opentelemetryVersion")
+    implementation("io.opentelemetry:opentelemetry-exporter-jaeger:$opentelemetryVersion")
+    implementation 'io.grpc:grpc-netty-shaded:1.40.1'
     implementation('com.devskiller:jfairy:0.6.4')
 }
 

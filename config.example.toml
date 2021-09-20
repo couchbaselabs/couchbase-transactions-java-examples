@@ -19,7 +19,13 @@ iterations = 10000
 amount = 50
 
 [open_telemetry]
-zipkin_endpoint = "http://host.docker.internal:9411/api/v2/spans"
+# Uncomment to enable sending OpenTelemetry spans to an OTLP endpoint, such as OpenTelemetry Collector.
+# See README.md for instructions on running OpenTelemetry Collector.
+# otlp_endpoint = "http://localhost:4317"
+
+# Uncomment to enable sending OpenTelemetry spans to a Zipkin-compatible endpoint, such as Zipkin itself or Jaeger.
+# See README.md for instructions on running Zipkin and Jaeger.
+# zipkin_endpoint = "http://localhost:9411/api/v2/spans"
 
 [prometheus]
 port = 9000

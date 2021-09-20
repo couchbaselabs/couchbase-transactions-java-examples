@@ -72,11 +72,52 @@ This is WIP and experimental.
 Copy `config.example.toml` to `config.toml` and edit it for your Couchbase cluster configuration.
 
 #### OpenTelemetry (Optional)
-Optionally, run Zipkin or Jaegar server for OpenTelemetry capture:
+The application can optionally output OpenTelemetry data that can be used for performance analysis.
+
+There are multiple tools for capturing and analysing this OpenTelemetry data, and several are supported.
+
+##### OpenTelemetry Collector
+This tool receives OpenTelemetry spans on port 4317 and then generally sends it on to another tool, such as Zipkin, Jaeger, Honeycomb, Lightstep or other.
+
+It is increasingly recommended as a best practice when working with OpenTelemetry, as it provides an abstraction allowing the ultimate span destination to be changed at runtime without modifying or restarting the application.
+
+The collector can be run with:
+
+  ```docker run -v "${PWD}/opentelemetry-config.example.yaml:/etc/otel-local-config.yaml" -p 4317:4317 otel/opentelemetry-collector  --config /etc/otel-local-config.yaml```
+
+Then uncomment the otlp_endpoint line in `config.toml` to enable sending to this.
+
+The default `opentelemetry-config.example.yaml` just logs spans to console.
+See the [OpenTelemetry documentation](https://opentelemetry.io/docs/collector/configuration/) for how to configure it further. 
+
+##### Zipkin
+Zipkin can be run with:
+
 ```docker run -d -p 9411:9411 openzipkin/zipkin```
-The default `config.example.toml` configuration (see `zipkin_endpoint`) sends OpenTelemetry span data to port 9411 on the Docker host.
+
+Then uncomment the zipkin_endpoint line in `config.toml` to enable sending to this. 
+
 The output can be viewed at `http://localhost:9411/zipkin/`.
-Alternative you can run Jaegar instead and it will also work.
+
+##### Jaegar
+Jaegar can be run with:
+
+```
+docker run -d --name jaeger \
+  -e COLLECTOR_ZIPKIN_HOST_PORT=:9411 \
+  -p 5775:5775/udp \
+  -p 6831:6831/udp \
+  -p 6832:6832/udp \
+  -p 5778:5778 \
+  -p 16686:16686 \
+  -p 14268:14268 \
+  -p 14250:14250 \
+  -p 9411:9411 \
+  jaegertracing/all-in-one:1.26
+```
+
+Jaegar provides a Zipkin-compatible endpoint running on the same port 9411. 
+So the instructions to use Jaegar are the same as for Zipkin: simply uncomment the zipkin_endpoint line in `config.toml`.
 
 #### Prometheus (Optional)
 Optionally, run Prometheus for metrics capture.

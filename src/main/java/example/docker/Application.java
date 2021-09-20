@@ -18,8 +18,10 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.prometheus.client.Counter;
@@ -52,7 +54,7 @@ public class Application {
 	static final Histogram requestLatency = Histogram.build()
 			.buckets(0.000250, 0.000375, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, .4, 1, 2)
 			.name("transaction_latency").help("Transaction latency in seconds").register();
-	private final Logger logger = LoggerFactory.getLogger(Application.class);
+	private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
 	private static String bucketName;
 
@@ -93,7 +95,8 @@ public class Application {
 				boolean verbose = toml.getBoolean("transactions.verbose_logging");
 				int prometheusPort = toml.getLong("prometheus.port").intValue();
 
-				String zipkinEndpoint = toml.getString("open_telemetry.zipkin_endpoint");
+				String otelOTLPEndpoint = toml.getString("open_telemetry.otlp_endpoint");
+				String otelZipkinEndpoint = toml.getString("open_telemetry.zipkin_endpoint");
 
 				long amount = toml.getLong("transfer.amount");
 
@@ -125,13 +128,13 @@ public class Application {
 					verbose = Boolean.parseBoolean(Files.readString(Path.of("/deployments/txnexample/config/verbose"), StandardCharsets.UTF_8));
 					logger.info("Loaded config from K8S environment…");
 				} catch (IOException e) {
-					logger.info("Failed to retrieve secrets or config map at startup.");
+					logger.info("Did not discover secret or config map overrides at startup.");
 				}
 
 
 				logger.info("Connecting to cluster {} and opening bucket {} as user {}", clusterHost, bucketName, username);
 
-				OpenTelemetry tracer = configureOpenTelemetry(zipkinEndpoint);
+				OpenTelemetry tracer = configureOpenTelemetry(otelOTLPEndpoint, otelZipkinEndpoint);
 				RequestTracer requestTracer = OpenTelemetryRequestTracer.wrap(tracer);
 
 				// Initialize the Couchbase cluster
@@ -196,7 +199,7 @@ public class Application {
 				env.shutdown();
 				cluster.disconnect();
 
-			} catch (RuntimeException e) {
+			} catch (Throwable e) {
 				logger.error("Failed: {}, pausing 60s before exit", e.toString());
 				System.err.println("Failed: " + e.getCause());
 				Thread.sleep(60000);
@@ -206,17 +209,28 @@ public class Application {
 		};
 	}
 
-	private static OpenTelemetry configureOpenTelemetry(String zipkinEndpoint) {
+	private static OpenTelemetry configureOpenTelemetry(String otelOTLPEndpoint, String otelZipkinEndpoint) {
 
-		if (zipkinEndpoint.equalsIgnoreCase("disabled")) {
-			LoggerFactory.getLogger(Application.class).info("Not enabling zipkin tracing.");
-			return null;
+		SdkTracerProviderBuilder builder = SdkTracerProvider.builder()
+				.setSampler(Sampler.alwaysOn());
+
+		if (otelOTLPEndpoint != null) {
+			logger.info("Enabling OpenTelemetry OTLP output on " + otelOTLPEndpoint);
+
+			builder.addSpanProcessor(BatchSpanProcessor.builder(OtlpGrpcSpanExporter.builder()
+					.setEndpoint(otelOTLPEndpoint)
+					.build()).build());
 		}
 
-		SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
-				.setSampler(Sampler.alwaysOn())
-				.addSpanProcessor(BatchSpanProcessor.builder(OtlpGrpcSpanExporter.builder().build()).build())
-				.build();
+		if (otelZipkinEndpoint != null) {
+			logger.info("Enabling OpenTelemetry output to Zipkin on " + otelZipkinEndpoint);
+
+			builder.addSpanProcessor(BatchSpanProcessor.builder(ZipkinSpanExporter.builder()
+					.setEndpoint(otelZipkinEndpoint)
+					.build()).build());
+		}
+
+		SdkTracerProvider sdkTracerProvider = builder.build();
 
 		return OpenTelemetrySdk.builder()
 				.setTracerProvider(sdkTracerProvider)

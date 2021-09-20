@@ -445,7 +445,7 @@ public class GameExample {
 
                 // If we reach here, commit is automatic.
                 logger.debug("In transaction - about to commit");
-                ctx.commit(); // can also, and optionally, explicitly commit
+                ctx.commit();
             });
         } catch (TransactionCommitAmbiguous err) {
             // This could happen in certain system failure cases, e.g. network failure after sending the commit
