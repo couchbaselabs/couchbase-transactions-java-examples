@@ -16,7 +16,7 @@ kind: CouchbaseCluster
 metadata:
   name: cb-example
 spec:
-  image: couchbase/server:6.6.0
+  image: couchbase/server:7.0.1
   cluster:
     autoCompaction:
       databaseFragmentationThreshold:
