@@ -15,13 +15,20 @@ spec:
     spec:
       containers:
         - name: cbtransactionsexample
-          image: ingenthr/couchbase-transactions-example:0.1.8
+          image: ingenthr/couchbase-transactions-example:0.1.9
           volumeMounts:
             - name: couchbase-user
               mountPath: "/deployments/txnexample/creds"
               readOnly: true
             - name: txnexample-config
               mountPath: "/deployments/txnexample/config"
+        - name: agent
+          image: otel/opentelemetry-collector:0.34.0
+          args:
+            - --config=/conf/agent.yaml
+          volumeMounts:
+            - mountPath: /conf
+              name: agent-config
       volumes:
         - name: txnexample-config
           configMap:
@@ -34,6 +41,12 @@ spec:
                 path: username
               - key: password
                 path: password
+        - name: agent-config
+          configMap:
+            items:
+              - key: agent.yaml
+                path: agent.yaml
+            name: agent-config
 ---
 kind: Service
 apiVersion: v1
@@ -45,7 +58,12 @@ metadata:
 spec:
   selector:
     app: cbtxns
+    app.kubernetes.io/name: opentelemetrycollector
   ports:
+    - port: 4137
+      name: grpc-oltp
+      protocol: TCP
+      targetPort: 4317
     - port: 8080
       name: txnhttp
     - port: 9000
